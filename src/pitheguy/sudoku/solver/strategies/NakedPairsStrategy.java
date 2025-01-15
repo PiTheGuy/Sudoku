@@ -14,21 +14,21 @@ public class NakedPairsStrategy extends ByGroupSolveStrategy {
         boolean changed = false;
         for (int i = 0; i < squares.size() - 1; i++) {
             Square square = squares.get(i);
-            if (!square.getValue().isEmpty()) continue;
+            if (square.isSolved()) continue;
             DigitCandidates candidates = square.getCandidates();
             if (candidates.count() != 2) continue;
             List<Square> matches = new ArrayList<>();
             matches.add(square);
             for (int j = i + 1; j < squares.size(); j++) {
                 Square otherSquare = squares.get(j);
-                if (!otherSquare.getValue().isEmpty()) continue;
+                if (otherSquare.isSolved()) continue;
                 if (otherSquare.getCandidates().equals(candidates)) matches.add(otherSquare);
                 if (matches.size() > 2) break;
             }
             if (matches.size() != 2) continue;
             List<Integer> values = candidates.getAllCandidates();
             for (Square currentSquare : squares) {
-                if (!currentSquare.getValue().isEmpty()) continue;
+                if (currentSquare.isSolved()) continue;
                 if (matches.contains(currentSquare)) continue;
                 for (int value : values) changed |= currentSquare.getCandidates().remove(value);
             }

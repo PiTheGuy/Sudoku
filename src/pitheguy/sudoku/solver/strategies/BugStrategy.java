@@ -11,7 +11,9 @@ public class BugStrategy implements SolveStrategy {
     @Override
     public boolean solve(Sudoku sudoku) {
         boolean changed = false;
-        Optional<Square> bugSquareOptional = SolverUtils.getOnlySquareThat(sudoku.getAllSquares(), square -> square.getCandidates().count() != 2, true);
+        Optional<Square> bugSquareOptional = SolverUtils.getOnlySquareThat(sudoku.getAllSquares(),
+                square -> square.getCandidates().count() != 2,
+                true);
         if (bugSquareOptional.isEmpty()) return false;
         Square bugSquare = bugSquareOptional.get();
         for (int digit : bugSquare.getCandidates().getAllCandidates()) {

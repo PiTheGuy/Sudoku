@@ -17,7 +17,7 @@ public class HiddenPairsStrategy extends ByGroupSolveStrategy {
                 if (SolverUtils.hasDigitSolved(squares, d2)) continue;
                 List<Square> matches = new ArrayList<>();
                 for (Square square : squares) {
-                    if (!square.getValue().isEmpty()) continue;
+                    if (square.isSolved()) continue;
                     DigitCandidates candidates = square.getCandidates();
                     if (candidates.contains(d1) && candidates.contains(d2)) matches.add(square);
                     else if (candidates.contains(d1) || candidates.contains(d2)) {

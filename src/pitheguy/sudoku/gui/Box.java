@@ -1,5 +1,7 @@
 package pitheguy.sudoku.gui;
 
+import pitheguy.sudoku.solver.SolverUtils;
+
 import javax.swing.*;
 import javax.swing.border.LineBorder;
 import java.awt.*;
@@ -36,11 +38,6 @@ public class Box extends JPanel {
     }
 
     public boolean hasDigitSolved(int digit) {
-        for (Square square : squares) {
-            String value = square.getValue();
-            if (value.isEmpty()) continue;
-            if (value.charAt(0) == '0' + digit) return true;
-        }
-        return false;
+        return SolverUtils.hasDigitSolved(List.of(squares), digit);
     }
 }

@@ -14,7 +14,7 @@ public class CandidateRemovalStrategy implements SolveStrategy {
         for (int row = 0; row < 9; row++) {
             for (int col = 0; col < 9; col++) {
                 Square square = sudoku.getSquare(row, col);
-                if (!square.getValue().isEmpty()) continue;
+                if (square.isSolved()) continue;
                 DigitCandidates candidates = square.getCandidates();
                 changed |= removeInvalidCandidates(candidates, square.getSurroundingRow());
                 changed |= removeInvalidCandidates(candidates, square.getSurroundingColumn());
@@ -33,9 +33,8 @@ public class CandidateRemovalStrategy implements SolveStrategy {
     private static boolean removeInvalidCandidates(DigitCandidates candidates, List<Square> squares) {
         boolean changed = false;
         for (Square square : squares) {
-            String value = square.getValue();
-            if (value.isEmpty()) continue;
-            int digit = value.charAt(0) - '0';
+            if (!square.isSolved()) continue;
+            int digit = square.getValue().charAt(0) - '0';
             changed |= candidates.remove(digit);
         }
         return changed;
