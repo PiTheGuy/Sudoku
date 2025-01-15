@@ -25,7 +25,7 @@ public class Sudoku extends JFrame {
         try {
             return new RandomAccessFile("sudoku.csv", "r");
         } catch (IOException e) {
-            throw new RuntimeException("Failed to open puzzle file", e);
+            return null;
         }
     });
 
@@ -140,6 +140,10 @@ public class Sudoku extends JFrame {
     public void loadPuzzle(int puzzleNumber) {
         int bytesPerLine = 164;
         try {
+            if (threadLocalFile == null) {
+                JOptionPane.showMessageDialog(this, "Failed to load puzzles file. Puzzle loading is unavailable", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
             RandomAccessFile puzzlesFile = threadLocalFile.get();
             puzzlesFile.seek((long) (puzzleNumber - 1) * bytesPerLine);
             String line = puzzlesFile.readLine();
