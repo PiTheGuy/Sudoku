@@ -46,8 +46,9 @@ public class SolverChecker {
             Collections.sort(unsolved);
             StringBuilder sb = new StringBuilder();
             sb.append("Unsolved puzzles: ");
-            sb.append(unsolved.stream().limit(maxShownPuzzles).map(String::valueOf).collect(Collectors.joining(", ")));
-            if (unsolved.size() > maxShownPuzzles) sb.append(", and ").append(unsolved.size() - maxShownPuzzles).append(" more...");
+            int limit = maxShownPuzzles == 0 ? unsolved.size() : maxShownPuzzles;
+            sb.append(unsolved.stream().limit(limit).map(String::valueOf).collect(Collectors.joining(", ")));
+            if (unsolved.size() > limit) sb.append(", and ").append(unsolved.size() - limit).append(" more...");
             System.out.println(sb);
         }
     }
