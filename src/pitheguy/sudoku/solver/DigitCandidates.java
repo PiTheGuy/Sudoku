@@ -18,11 +18,21 @@ public class DigitCandidates {
         return (flags & (1 << (digit - 1))) != 0;
     }
 
+    public boolean containsAll(DigitCandidates candidates) {
+        return (this.flags & candidates.flags) == candidates.flags;
+    }
+
     public boolean remove(int digit) {
         checkDigit(digit);
         boolean contains = contains(digit);
         flags &= (short) ~(1 << (digit - 1));
         return contains;
+    }
+
+    public boolean removeAll(DigitCandidates candidates) {
+        short oldFlags = this.flags;
+        this.flags &= (short) ~candidates.flags;
+        return oldFlags != this.flags;
     }
 
     public void add(int digit) {

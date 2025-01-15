@@ -1,9 +1,9 @@
 package pitheguy.sudoku.solver;
 
 import pitheguy.sudoku.gui.Square;
+import pitheguy.sudoku.gui.Sudoku;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Predicate;
 
 public class SolverUtils {
@@ -33,6 +33,14 @@ public class SolverUtils {
             }
         }
         return result;
+    }
+
+    public static List<Square> getAllBivalueSquares(Sudoku sudoku) {
+        List<Square> bivalueSquares = new ArrayList<>();
+        sudoku.forEachSquare(square -> {
+            if (!square.isSolved() && square.getCandidates().count() == 2) bivalueSquares.add(square);
+        });
+        return bivalueSquares;
     }
 }
 

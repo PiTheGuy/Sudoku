@@ -10,10 +10,7 @@ import java.util.*;
 public class XYChainsStrategy implements SolveStrategy {
     @Override
     public boolean solve(Sudoku sudoku) {
-        List<Square> bivalueSquares = new ArrayList<>();
-        sudoku.forEachSquare(square -> {
-            if (!square.isSolved() && square.getCandidates().count() == 2) bivalueSquares.add(square);
-        });
+        List<Square> bivalueSquares = SolverUtils.getAllBivalueSquares(sudoku);
         Set<List<Square>> allChains = new LinkedHashSet<>();
         for (Square square : bivalueSquares) buildChain(square, new ArrayList<>(), allChains, new HashSet<>());
         for (List<Square> chain : allChains) {

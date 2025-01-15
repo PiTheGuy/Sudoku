@@ -38,6 +38,7 @@ public class SudokuSolver {
                 new RectangleEliminationStrategy(),
                 new SwordfishStrategy(),
                 new XYZWingStrategy(),
+                new UniqueRectanglesStrategy(),
                 new XYChainsStrategy()
         );
 
