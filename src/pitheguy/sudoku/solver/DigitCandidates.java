@@ -87,6 +87,10 @@ public class DigitCandidates {
         flags = (short) 0b111_111_111;
     }
 
+    public DigitCandidates copy() {
+        return new DigitCandidates(flags);
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder("[");
