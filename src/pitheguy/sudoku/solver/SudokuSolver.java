@@ -8,7 +8,7 @@ import java.util.List;
 
 public class SudokuSolver {
     private static final boolean DEBUG = false;
-    private static final boolean RUN_ALL = false;
+    private static final boolean RUN_ALL = true;
     private final Sudoku sudoku;
 
     public SudokuSolver(Sudoku sudoku) {
@@ -39,7 +39,8 @@ public class SudokuSolver {
                 new SwordfishStrategy(),
                 new XYZWingStrategy(),
                 new UniqueRectanglesStrategy(),
-                new XYChainsStrategy()
+                new XYChainsStrategy(),
+                new JellyfishStrategy()
         );
 
         boolean anySolved = false;
