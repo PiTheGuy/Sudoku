@@ -96,9 +96,15 @@ public class Square extends JPanel {
         return sudoku.getBox(getBox());
     }
 
+    public String getLocationString() {
+        char rowChar = (char) ('A' + row);
+        char colChar = (char) ('1' + col);
+        return "" + rowChar + colChar;
+    }
+
     @Override
     public String toString() {
-        return "(" + row + ", " + col + "): " + (getValue().isEmpty() ? getCandidates() : getValue());
+        return getLocationString() + ": " + (getValue().isEmpty() ? getCandidates() : getValue());
     }
 
     @Override

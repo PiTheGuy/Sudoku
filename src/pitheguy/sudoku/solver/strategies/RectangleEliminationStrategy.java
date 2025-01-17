@@ -35,6 +35,7 @@ public class RectangleEliminationStrategy implements SolveStrategy {
             if (!current.isSolved() && current != wing1 && current.getCandidates().contains(digit))
                 possibleSquares.add(current);
         if (possibleSquares.size() < 2) return false;
+        wing2:
         for (Square wing2 : possibleSquares) {
             if (wing2 == square) continue;
             Square forthCorner = isRow ? sudoku.getSquare(wing2.getRow(), wing1.getCol()) : sudoku.getSquare(wing1.getRow(), wing2.getCol());;
@@ -46,7 +47,7 @@ public class RectangleEliminationStrategy implements SolveStrategy {
                 if (!current.getCandidates().contains(digit)) continue;
                 if (!SolverUtils.isConnected(current, wing1) &&
                     !SolverUtils.isConnected(current, wing2)) {
-                    return false;
+                    continue wing2;
                 }
             }
             if (wing2.getCandidates().remove(digit)) return true;
