@@ -23,21 +23,24 @@ public class XYZWingStrategy implements SolveStrategy {
         List<Match> matches = new ArrayList<>();
         for (Square pivot : trivalueCells) {
             List<Integer> candidates = pivot.getCandidates().getAllCandidates();
-            int x = candidates.get(0);
-            int y = candidates.get(1);
-            int z = candidates.get(2);
-            List<Square> containsXY = new ArrayList<>();
-            List<Square> containsXZ = new ArrayList<>();
-            for (Square wing : bivalueCells) {
-                if (!SolverUtils.isConnected(pivot, wing)) continue;
-                DigitCandidates wingCandidates = wing.getCandidates();
-                if (wingCandidates.contains(x) && wingCandidates.contains(y)) containsXY.add(wing);
-                if (wingCandidates.contains(x) && wingCandidates.contains(z)) containsXZ.add(wing);
-            }
-            for (Square wing1 : containsXY) {
-                for (Square wing2 : containsXZ) {
-                    if (wing1 == wing2 || SolverUtils.isConnected(wing1, wing2)) continue;
-                    matches.add(new Match(pivot, wing1, wing2, x));
+            for (int z : candidates) {
+                List<Integer> otherCandidates = new ArrayList<>(candidates);
+                otherCandidates.remove((Integer) z);
+                int x = otherCandidates.get(0);
+                int y = otherCandidates.get(1);
+                List<Square> containsXZ = new ArrayList<>();
+                List<Square> containsYZ = new ArrayList<>();
+                for (Square wing : bivalueCells) {
+                    if (!SolverUtils.isConnected(pivot, wing)) continue;
+                    DigitCandidates wingCandidates = wing.getCandidates();
+                    if (wingCandidates.contains(x) && wingCandidates.contains(z)) containsXZ.add(wing);
+                    if (wingCandidates.contains(y) && wingCandidates.contains(z)) containsYZ.add(wing);
+                }
+                for (Square wing1 : containsXZ) {
+                    for (Square wing2 : containsYZ) {
+                        if (wing1 == wing2 || SolverUtils.isConnected(wing1, wing2)) continue;
+                        matches.add(new Match(pivot, wing1, wing2, z));
+                    }
                 }
             }
         }
@@ -47,7 +50,7 @@ public class XYZWingStrategy implements SolveStrategy {
                 if (SolverUtils.isConnected(square, match.pivot) &&
                     SolverUtils.isConnected(square, match.wing1) &&
                     SolverUtils.isConnected(square, match.wing2)) {
-                    changed[0] |= square.getCandidates().remove(match.x);
+                    changed[0] |= square.getCandidates().remove(match.z);
                 }
             });
         }
@@ -55,6 +58,6 @@ public class XYZWingStrategy implements SolveStrategy {
         return changed[0];
     }
 
-    private record Match(Square pivot, Square wing1, Square wing2, int x) {
+    private record Match(Square pivot, Square wing1, Square wing2, int z) {
     }
 }
