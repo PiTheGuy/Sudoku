@@ -64,6 +64,8 @@ public class DigitCandidates {
         return new DigitCandidates((short) (flags | other.flags));
     }
 
+    public DigitCandidates and(DigitCandidates other) {return new DigitCandidates((short) (flags & other.flags));}
+
     public int count() {
         return Integer.bitCount(flags);
     }

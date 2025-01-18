@@ -42,6 +42,7 @@ public class SudokuSolver {
                 new XYZWingStrategy(),
                 new UniqueRectanglesStrategy(),
                 new XYChainsStrategy(),
+                new HiddenUniqueRectanglesStrategy(),
                 new JellyfishStrategy()
         );
 
@@ -57,28 +58,24 @@ public class SudokuSolver {
         return anySolved;
     }
 
-    private static boolean setupCandidates(Sudoku sudoku) {
-        boolean changed = false;
+    private static void setupCandidates(Sudoku sudoku) {
         for (int row = 0; row < 9; row++) {
             for (int col = 0; col < 9; col++) {
                 Square square = sudoku.getSquare(row, col);
                 if (square.isSolved()) continue;
                 DigitCandidates candidates = square.getCandidates();
-                changed |= removeInvalidCandidates(candidates, square.getSurroundingRow());
-                changed |= removeInvalidCandidates(candidates, square.getSurroundingColumn());
-                changed |= removeInvalidCandidates(candidates, square.getSurroundingBox());
+                removeInvalidCandidates(candidates, square.getSurroundingRow());
+                removeInvalidCandidates(candidates, square.getSurroundingColumn());
+                removeInvalidCandidates(candidates, square.getSurroundingBox());
             }
         }
-        return changed;
     }
 
-    private static boolean removeInvalidCandidates(DigitCandidates candidates, List<Square> squares) {
-        boolean changed = false;
+    private static void removeInvalidCandidates(DigitCandidates candidates, List<Square> squares) {
         for (Square square : squares) {
             if (!square.isSolved()) continue;
             int digit = square.getValue().charAt(0) - '0';
-            changed |= candidates.remove(digit);
+            candidates.remove(digit);
         }
-        return changed;
     }
 }
