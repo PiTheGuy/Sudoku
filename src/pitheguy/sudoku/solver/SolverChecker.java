@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class SolverChecker {
+    private static volatile boolean shutdownTriggered = false;
 
     public static void main(String[] args) throws ParseException {
         CommandLineParser parser = new DefaultParser();
@@ -28,8 +29,10 @@ public class SolverChecker {
     }
 
     private static void run(int iterations, int progressUpdateInterval, int maxShownPuzzles) {
+        long startTime = System.currentTimeMillis();
         List<Integer> unsolved = Collections.synchronizedList(new ArrayList<>());
         AtomicInteger completed = new AtomicInteger(0);
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> summarizeProgress(completed.get(), maxShownPuzzles, startTime, unsolved)));
         ThreadLocal<Sudoku> threadLocalSudoku = ThreadLocal.withInitial(() -> new Sudoku(false));
         IntStream.range(1, iterations).parallel().forEach(i -> {
             Sudoku sudoku = threadLocalSudoku.get();
@@ -38,10 +41,16 @@ public class SolverChecker {
             if (!sudoku.isSolved()) unsolved.add(i);
             printProgressIfNeeded(iterations, progressUpdateInterval, completed.incrementAndGet());
         });
+        summarizeProgress(iterations, maxShownPuzzles, startTime, unsolved);
+    }
 
+    private static void summarizeProgress(int iterations, int maxShownPuzzles, long startTime, List<Integer> unsolved) {
+        if (shutdownTriggered) return;
+        shutdownTriggered = true;
+        double totalTime = (System.currentTimeMillis() - startTime) / 1000.0;
         int solvedPuzzles = iterations - unsolved.size();
         double percent = (double) solvedPuzzles / iterations * 100;
-        System.out.printf("Solved %d of %d puzzles (%.2f%%)%n", solvedPuzzles, iterations, percent);
+        System.out.printf("Solved %d of %d puzzles (%.2f%%) in %.2f seconds%n", solvedPuzzles, iterations, percent, totalTime);
         if (!unsolved.isEmpty()) {
             Collections.sort(unsolved);
             StringBuilder sb = new StringBuilder();
@@ -54,9 +63,10 @@ public class SolverChecker {
     }
 
     private static void printProgressIfNeeded(int iterations, int progressUpdateInterval, int completedPuzzles) {
-        if (progressUpdateInterval == 0) return;
-        if (completedPuzzles % progressUpdateInterval == 0) System.out.println("Progress: " + completedPuzzles + " / " + iterations);
+        if (progressUpdateInterval > 0 && completedPuzzles % progressUpdateInterval == 0) {
+            double percent = (double) completedPuzzles / iterations * 100;
+            System.out.printf("Progress: %d / %d (%.2f%%)%n", completedPuzzles, iterations, percent);
+        }
     }
-
 
 }
