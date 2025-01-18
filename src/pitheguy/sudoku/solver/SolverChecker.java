@@ -32,8 +32,12 @@ public class SolverChecker {
         long startTime = System.currentTimeMillis();
         List<Integer> unsolved = Collections.synchronizedList(new ArrayList<>());
         AtomicInteger completed = new AtomicInteger(0);
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> summarizeProgress(completed.get(), maxShownPuzzles, startTime, unsolved)));
         ThreadLocal<Sudoku> threadLocalSudoku = ThreadLocal.withInitial(() -> new Sudoku(false));
+        if (!threadLocalSudoku.get().isPuzzleLoadingAvailable()) {
+            System.err.println("Failed to load puzzles file.");
+            System.exit(1);
+        }
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> summarizeProgress(completed.get(), maxShownPuzzles, startTime, unsolved)));
         IntStream.range(1, iterations).parallel().forEach(i -> {
             Sudoku sudoku = threadLocalSudoku.get();
             sudoku.loadPuzzle(i);

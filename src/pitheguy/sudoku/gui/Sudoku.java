@@ -127,7 +127,15 @@ public class Sudoku extends JFrame {
         }
     }
 
+    public boolean isPuzzleLoadingAvailable() {
+        return threadLocalFile.get() != null;
+    }
+
     public void openLoadPuzzleDialog() {
+        if (!isPuzzleLoadingAvailable()) {
+            JOptionPane.showMessageDialog(this, "Failed to load puzzles file. Puzzle loading is unavailable", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
         String response = JOptionPane.showInputDialog("Please enter a puzzle number");
         if (response == null) return;
         try {
@@ -140,10 +148,6 @@ public class Sudoku extends JFrame {
     public void loadPuzzle(int puzzleNumber) {
         int bytesPerLine = 164;
         try {
-            if (threadLocalFile == null) {
-                JOptionPane.showMessageDialog(this, "Failed to load puzzles file. Puzzle loading is unavailable", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
             RandomAccessFile puzzlesFile = threadLocalFile.get();
             puzzlesFile.seek((long) (puzzleNumber - 1) * bytesPerLine);
             String line = puzzlesFile.readLine();
