@@ -1,5 +1,6 @@
 package pitheguy.sudoku.solver;
 
+import pitheguy.sudoku.gui.Square;
 import pitheguy.sudoku.gui.Sudoku;
 import pitheguy.sudoku.solver.strategies.*;
 
@@ -16,6 +17,7 @@ public class SudokuSolver {
     }
 
     public void solve() {
+        setupCandidates(sudoku);
         while (!sudoku.isSolved()) {
             boolean changed = stepSolve();
             if (!changed || DEBUG) break;
@@ -53,5 +55,30 @@ public class SudokuSolver {
         }
 
         return anySolved;
+    }
+
+    private static boolean setupCandidates(Sudoku sudoku) {
+        boolean changed = false;
+        for (int row = 0; row < 9; row++) {
+            for (int col = 0; col < 9; col++) {
+                Square square = sudoku.getSquare(row, col);
+                if (square.isSolved()) continue;
+                DigitCandidates candidates = square.getCandidates();
+                changed |= removeInvalidCandidates(candidates, square.getSurroundingRow());
+                changed |= removeInvalidCandidates(candidates, square.getSurroundingColumn());
+                changed |= removeInvalidCandidates(candidates, square.getSurroundingBox());
+            }
+        }
+        return changed;
+    }
+
+    private static boolean removeInvalidCandidates(DigitCandidates candidates, List<Square> squares) {
+        boolean changed = false;
+        for (Square square : squares) {
+            if (!square.isSolved()) continue;
+            int digit = square.getValue().charAt(0) - '0';
+            changed |= candidates.remove(digit);
+        }
+        return changed;
     }
 }
