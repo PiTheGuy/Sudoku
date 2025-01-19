@@ -89,6 +89,7 @@ public class UniqueRectanglesStrategy implements SolveStrategy {
                     affectedSquares.addAll(rectangle.square3().getSurroundingBox());
                 affectedSquares.remove(rectangle.square3());
                 affectedSquares.remove(rectangle.square4());
+                affectedSquares.removeIf(Square::isSolved);
                 boolean changed = false;
                 for (Square square : affectedSquares) changed |= square.getCandidates().remove(extraDigit);
                 if (changed) return true;
@@ -108,6 +109,7 @@ public class UniqueRectanglesStrategy implements SolveStrategy {
                 Square otherSquare = null;
                 for (Square square : surroundingUnit) {
                     if (square == rectangle.square3() || square == rectangle.square4()) continue;
+                    if (square.isSolved()) continue;
                     if (square.getCandidates().equals(candidates)) {
                         otherSquare = square;
                         break;
@@ -116,6 +118,7 @@ public class UniqueRectanglesStrategy implements SolveStrategy {
                 if (otherSquare == null) continue;
                 boolean changed = false;
                 for (Square square : surroundingUnit) {
+                    if (square.isSolved()) continue;
                     if (square == rectangle.square3() || square == rectangle.square4() || square == otherSquare)
                         continue;
                     changed |= square.getCandidates().removeAll(candidates);

@@ -175,7 +175,7 @@ public class Sudoku extends JFrame {
     }
 
     public void resetCandidates() {
-        forEachSquare(square -> square.getCandidates().reset());
+        getAllSquares().stream().filter(square -> !square.isSolved()).forEach(square -> square.getCandidates().reset());
     }
 
     public void toggleCandidate(int digit) {

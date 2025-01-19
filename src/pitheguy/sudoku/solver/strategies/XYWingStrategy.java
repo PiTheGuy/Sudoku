@@ -11,7 +11,7 @@ import java.util.List;
 public class XYWingStrategy implements SolveStrategy {
     @Override
     public boolean solve(Sudoku sudoku) {
-        boolean[] changed = {false};
+        boolean changed = false;
         List<Square> bivalueCells = new ArrayList<>();
         for (int row = 0; row < 9; row++) {
             for (int col = 0; col < 9; col++) {
@@ -43,14 +43,15 @@ public class XYWingStrategy implements SolveStrategy {
             }
         }
         for (Match match : matches) {
-            sudoku.forEachSquare(square -> {
-                if (square == match.pivot || square == match.wing1 || square == match.wing2) return;
+            for (Square square : sudoku.getAllSquares()) {
+                if (square == match.pivot || square == match.wing1 || square == match.wing2) continue;
+                if (square.isSolved()) continue;
                 if (SolverUtils.isConnected(square, match.wing1) && SolverUtils.isConnected(square, match.wing2))
-                    changed[0] |= square.getCandidates().remove(match.z);
-            });
+                    changed |= square.getCandidates().remove(match.z);
+            }
         }
 
-        return changed[0];
+        return changed;
     }
 
     private record Match(Square pivot, Square wing1, Square wing2, int z) {

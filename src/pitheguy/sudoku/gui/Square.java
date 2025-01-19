@@ -69,6 +69,7 @@ public class Square extends JPanel {
     }
 
     public DigitCandidates getCandidates() {
+        if (isSolved()) throw new IllegalStateException("Attempted to get candidates from a solved square");
         return candidates;
     }
 

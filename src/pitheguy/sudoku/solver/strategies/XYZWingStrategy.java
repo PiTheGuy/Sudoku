@@ -9,7 +9,7 @@ import java.util.List;
 
 public class XYZWingStrategy implements SolveStrategy {
     public boolean solve(Sudoku sudoku) {
-        boolean[] changed = {false};
+        boolean changed = false;
         List<Square> trivalueCells = new ArrayList<>();
         List<Square> bivalueCells = new ArrayList<>();
         for (int row = 0; row < 9; row++) {
@@ -45,17 +45,18 @@ public class XYZWingStrategy implements SolveStrategy {
             }
         }
         for (Match match : matches) {
-            sudoku.forEachSquare(square -> {
-                if (square == match.pivot || square == match.wing1 || square == match.wing2) return;
+            for (Square square : sudoku.getAllSquares()) {
+                if (square.isSolved()) continue;
+                if (square == match.pivot || square == match.wing1 || square == match.wing2) continue;
                 if (SolverUtils.isConnected(square, match.pivot) &&
                     SolverUtils.isConnected(square, match.wing1) &&
                     SolverUtils.isConnected(square, match.wing2)) {
-                    changed[0] |= square.getCandidates().remove(match.z);
+                    changed |= square.getCandidates().remove(match.z);
                 }
-            });
+            }
         }
 
-        return changed[0];
+        return changed;
     }
 
     private record Match(Square pivot, Square wing1, Square wing2, int z) {

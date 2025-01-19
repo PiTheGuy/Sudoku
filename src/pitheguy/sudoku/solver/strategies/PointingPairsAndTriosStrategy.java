@@ -34,8 +34,12 @@ public class PointingPairsAndTriosStrategy implements SolveStrategy {
         }
         if (hasDigit) {
             List<Square> affectedSquares = isRow ? box.getSquare(index, 0).getSurroundingRow() : box.getSquare(0, index).getSurroundingColumn();
-            for (Square currentSquare : affectedSquares)
-                if (!squares.contains(currentSquare)) changed |= currentSquare.getCandidates().remove(digit);
+            for (Square currentSquare : affectedSquares) {
+                if (currentSquare.isSolved()) continue;
+                if (!squares.contains(currentSquare)) {
+                    changed |= currentSquare.getCandidates().remove(digit);
+                }
+            }
         }
         return changed;
     }

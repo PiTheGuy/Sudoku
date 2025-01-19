@@ -36,6 +36,7 @@ public class HiddenTripletsStrategy extends ByGroupSolveStrategy {
         if (tripletSquares.size() != 3) return false;
         for (Square square : squares) {
             if (tripletSquares.contains(square)) continue;
+            if (square.isSolved()) continue;
             DigitCandidates candidates = square.getCandidates();
             if (candidates.contains(d1) || candidates.contains(d2) || candidates.contains(d3)) return false;
         }
