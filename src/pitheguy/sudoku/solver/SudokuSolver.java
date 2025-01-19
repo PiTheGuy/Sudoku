@@ -40,10 +40,11 @@ public class SudokuSolver {
                 new RectangleEliminationStrategy(),
                 new SwordfishStrategy(),
                 new XYZWingStrategy(),
-                new UniqueRectanglesStrategy(),
                 new XYChainsStrategy(),
-                new HiddenUniqueRectanglesStrategy(),
-                new JellyfishStrategy()
+                new JellyfishStrategy(),
+                new UniqueRectanglesStrategy(),
+                new AlignedPairExclusionStrategy(),
+                new HiddenUniqueRectanglesStrategy()
         );
 
         boolean anySolved = false;
