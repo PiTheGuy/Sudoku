@@ -16,19 +16,19 @@ public class SolverChecker {
         CommandLine commandLine = parser.parse(createOptions(), args);
         int iterations = Integer.parseInt(commandLine.getOptionValue("iterations", "10000"));
         int progressUpdateInterval = Integer.parseInt(commandLine.getOptionValue("progressUpdateInterval", "10000"));
-        int maxShownPuzzles = Integer.parseInt(commandLine.getOptionValue("maxShownPuzzles", "10"));
-        run(iterations, progressUpdateInterval, maxShownPuzzles);
+        boolean showAllPuzzles = commandLine.hasOption("all");
+        run(iterations, progressUpdateInterval, showAllPuzzles);
     }
 
     public static Options createOptions() {
         Options options = new Options();
         options.addOption("iterations", true, "Number of iterations to run");
         options.addOption("progressUpdateInterval", true, "Progress update interval");
-        options.addOption("maxShownPuzzles", true, "Maximum number of unsolved puzzles to show on completion");
+        options.addOption("all", "Show all unsolved puzzles");
         return options;
     }
 
-    private static void run(int iterations, int progressUpdateInterval, int maxShownPuzzles) {
+    private static void run(int iterations, int progressUpdateInterval, boolean showAllPuzzles) {
         long startTime = System.currentTimeMillis();
         List<Integer> unsolved = Collections.synchronizedList(new ArrayList<>());
         AtomicInteger completed = new AtomicInteger(0);
@@ -37,7 +37,7 @@ public class SolverChecker {
             System.err.println("Failed to load puzzles file.");
             System.exit(1);
         }
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> summarizeProgress(completed.get(), maxShownPuzzles, startTime, unsolved)));
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> summarizeProgress(completed.get(), showAllPuzzles, startTime, unsolved)));
         IntStream.range(1, iterations).parallel().forEach(i -> {
             Sudoku sudoku = threadLocalSudoku.get();
             sudoku.loadPuzzle(i);
@@ -45,10 +45,10 @@ public class SolverChecker {
             if (!sudoku.isSolved()) unsolved.add(i);
             printProgressIfNeeded(iterations, progressUpdateInterval, completed.incrementAndGet());
         });
-        summarizeProgress(iterations, maxShownPuzzles, startTime, unsolved);
+        summarizeProgress(iterations, showAllPuzzles, startTime, unsolved);
     }
 
-    private static void summarizeProgress(int iterations, int maxShownPuzzles, long startTime, List<Integer> unsolved) {
+    private static void summarizeProgress(int iterations, boolean showAllPuzzles, long startTime, List<Integer> unsolved) {
         if (shutdownTriggered) return;
         shutdownTriggered = true;
         double totalTime = (System.currentTimeMillis() - startTime) / 1000.0;
@@ -59,7 +59,7 @@ public class SolverChecker {
             Collections.sort(unsolved);
             StringBuilder sb = new StringBuilder();
             sb.append("Unsolved puzzles: ");
-            int limit = maxShownPuzzles == 0 ? unsolved.size() : maxShownPuzzles;
+            int limit = showAllPuzzles ? unsolved.size() : 10;
             sb.append(unsolved.stream().limit(limit).map(String::valueOf).collect(Collectors.joining(", ")));
             if (unsolved.size() > limit) sb.append(", and ").append(unsolved.size() - limit).append(" more...");
             System.out.println(sb);
