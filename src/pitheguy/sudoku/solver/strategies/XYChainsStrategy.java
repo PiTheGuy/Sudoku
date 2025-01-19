@@ -2,6 +2,7 @@ package pitheguy.sudoku.solver.strategies;
 
 import pitheguy.sudoku.gui.Square;
 import pitheguy.sudoku.gui.Sudoku;
+import pitheguy.sudoku.solver.DigitCandidates;
 import pitheguy.sudoku.solver.SolveStrategy;
 import pitheguy.sudoku.solver.SolverUtils;
 
@@ -10,9 +11,15 @@ import java.util.*;
 public class XYChainsStrategy implements SolveStrategy {
     @Override
     public boolean solve(Sudoku sudoku) {
+        if (solveImpl(sudoku, false)) return true;
+        if (solveImpl(sudoku, true)) return true;
+        return false;
+    }
+
+    private boolean solveImpl(Sudoku sudoku, boolean backtrack) {
         List<Square> bivalueSquares = SolverUtils.getAllBivalueSquares(sudoku);
         Set<List<Square>> allChains = new LinkedHashSet<>();
-        for (Square square : bivalueSquares) buildChain(square, new ArrayList<>(), allChains, new HashSet<>());
+        for (Square square : bivalueSquares) buildChain(square, new ArrayList<>(), allChains, new HashSet<>(), backtrack);
         for (List<Square> chain : allChains) {
             if (chain.size() < 3) continue;
             Square start = chain.getFirst();
@@ -26,8 +33,7 @@ public class XYChainsStrategy implements SolveStrategy {
                 if (square.isSolved()) continue;
                 if (chain.contains(square)) continue;
                 if (SolverUtils.isConnected(square, start) &&
-                    SolverUtils.isConnected(square, end) &&
-                    square.getCandidates().count() > 1) {
+                    SolverUtils.isConnected(square, end)) {
                     //System.out.println("Removing " + sharedCandidate + " from " + square);
                     if (square.getCandidates().remove(sharedCandidate)) return true;
                 }
@@ -58,9 +64,10 @@ public class XYChainsStrategy implements SolveStrategy {
         if (target == -1) return false;
         for (int i = 1; i < chain.size(); i++) {
             Square square = chain.get(i);
-            List<Integer> candidates = square.getCandidates().getAllCandidates();
-            if (!candidates.contains(target)) return false;
-            target = candidates.get(0) == target ? candidates.get(1) : candidates.get(0);
+            if (!square.getCandidates().contains(target)) return false;
+            DigitCandidates candidates = square.getCandidates().copy();
+            candidates.remove(target);
+            target = candidates.getFirst();
         }
         return true;
     }
@@ -85,12 +92,10 @@ public class XYChainsStrategy implements SolveStrategy {
     }
 
     private int getSharedCandidate(Square square1, Square square2) {
-        for (int c : square1.getCandidates().getAllCandidates())
-            if (square2.getCandidates().contains(c)) return c;
-        return -1;
+        return square1.getCandidates().and(square2.getCandidates()).getFirst();
     }
 
-    private void buildChain(Square square, List<Square> chain, Set<List<Square>> allChains, Set<Square> visited) {
+    private void buildChain(Square square, List<Square> chain, Set<List<Square>> allChains, Set<Square> visited, boolean backtrack) {
         //System.out.println("buildChain: " + square + " chain: " + chain);
         if (!isValidPartialChain(chain)) return;
         if (visited.contains(square)) {
@@ -106,8 +111,9 @@ public class XYChainsStrategy implements SolveStrategy {
         }
         for (Square next : connectedBivalueSquares) {
             if (square.getCandidates().or(next.getCandidates()).count() == 4) continue;
-            buildChain(next, new ArrayList<>(chain), allChains, visited);
+            buildChain(next, new ArrayList<>(chain), allChains, visited, backtrack);
         }
+        if (backtrack) visited.remove(square);
     }
 
     private List<Square> findConnectedBivalueSquares(Square square) {
