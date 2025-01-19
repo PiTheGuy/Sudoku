@@ -26,7 +26,7 @@ public class SudokuSolver {
 
     private boolean stepSolve() {
         List<SolveStrategy> strategies = Arrays.asList(
-                new CandidateRemovalStrategy(),
+                new NakedSinglesStrategy(),
                 new HiddenSinglesStrategy(),
                 new PointingPairsAndTriosStrategy(),
                 new ClaimingPairsAndTriosStrategy(),

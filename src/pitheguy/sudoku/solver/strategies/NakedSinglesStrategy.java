@@ -5,7 +5,7 @@ import pitheguy.sudoku.gui.Sudoku;
 import pitheguy.sudoku.solver.DigitCandidates;
 import pitheguy.sudoku.solver.SolveStrategy;
 
-public class CandidateRemovalStrategy implements SolveStrategy {
+public class NakedSinglesStrategy implements SolveStrategy {
     @Override
     public boolean solve(Sudoku sudoku) {
         boolean changed = false;
