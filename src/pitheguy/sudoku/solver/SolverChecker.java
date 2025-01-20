@@ -32,23 +32,26 @@ public class SolverChecker {
         long startTime = System.currentTimeMillis();
         List<Integer> unsolved = Collections.synchronizedList(new ArrayList<>());
         AtomicInteger completed = new AtomicInteger(0);
+        Map<Integer, Long> solveTimes = new HashMap<>();
         ThreadLocal<Sudoku> threadLocalSudoku = ThreadLocal.withInitial(() -> new Sudoku(false));
         if (!threadLocalSudoku.get().isPuzzleLoadingAvailable()) {
             System.err.println("Failed to load puzzles file.");
             System.exit(1);
         }
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> summarizeProgress(completed.get(), showAllPuzzles, startTime, unsolved)));
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> summarizeProgress(completed.get(), showAllPuzzles, startTime, unsolved, solveTimes)));
         IntStream.range(1, iterations).parallel().forEach(i -> {
             Sudoku sudoku = threadLocalSudoku.get();
             sudoku.loadPuzzle(i);
+            long start = System.currentTimeMillis();
             sudoku.solvePuzzle();
+            solveTimes.put(i, System.currentTimeMillis() - start);
             if (!sudoku.isSolved()) unsolved.add(i);
             printProgressIfNeeded(iterations, progressUpdateInterval, completed.incrementAndGet());
         });
-        summarizeProgress(iterations, showAllPuzzles, startTime, unsolved);
+        summarizeProgress(iterations, showAllPuzzles, startTime, unsolved, solveTimes);
     }
 
-    private static void summarizeProgress(int iterations, boolean showAllPuzzles, long startTime, List<Integer> unsolved) {
+    private static void summarizeProgress(int iterations, boolean showAllPuzzles, long startTime, List<Integer> unsolved, Map<Integer, Long> solveTimes) {
         if (shutdownTriggered) return;
         shutdownTriggered = true;
         double totalTime = (System.currentTimeMillis() - startTime) / 1000.0;
@@ -64,6 +67,12 @@ public class SolverChecker {
             if (unsolved.size() > limit) sb.append(", and ").append(unsolved.size() - limit).append(" more...");
             System.out.println(sb);
         }
+        String slowest = new HashMap<>(solveTimes).entrySet().stream()
+                .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
+                .limit(3L)
+                .map(e -> e.getKey() + " (" + e.getValue() + " ms)")
+                .collect(Collectors.joining(", "));
+        System.out.println("Slowest puzzles: " + slowest);
     }
 
     private static void printProgressIfNeeded(int iterations, int progressUpdateInterval, int completedPuzzles) {

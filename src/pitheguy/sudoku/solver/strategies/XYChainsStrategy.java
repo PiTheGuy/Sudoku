@@ -100,6 +100,7 @@ public class XYChainsStrategy implements SolveStrategy {
 
     private void buildChain(Square square, List<Square> chain, Set<List<Square>> allChains, SquareSet visited, boolean backtrack) {
         //System.out.println("buildChain: " + square + " chain: " + chain);
+        if (chain.size() > 10) return;
         if (!isValidPartialChain(chain)) return;
         if (visited.contains(square)) {
             allChains.add(chain);
