@@ -44,6 +44,7 @@ public class SudokuSolver {
                 new JellyfishStrategy(),
                 new UniqueRectanglesStrategy(),
                 new AlignedPairExclusionStrategy(),
+                new AlmostLockedSetStrategy(),
                 new HiddenUniqueRectanglesStrategy()
         );
 

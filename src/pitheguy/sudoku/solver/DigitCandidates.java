@@ -3,6 +3,8 @@ package pitheguy.sudoku.solver;
 import java.util.*;
 
 public class DigitCandidates {
+    public static final DigitCandidates EMPTY = new DigitCandidates((short) 0);
+
     private short flags;
 
     public DigitCandidates() {
