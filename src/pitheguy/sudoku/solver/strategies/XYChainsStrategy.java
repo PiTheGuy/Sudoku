@@ -5,10 +5,13 @@ import pitheguy.sudoku.gui.Sudoku;
 import pitheguy.sudoku.solver.DigitCandidates;
 import pitheguy.sudoku.solver.SolveStrategy;
 import pitheguy.sudoku.solver.SolverUtils;
+import pitheguy.sudoku.util.SquareSet;
 
 import java.util.*;
 
 public class XYChainsStrategy implements SolveStrategy {
+    private final Map<Square, List<Square>> connectedBivalueSquaresCache = new HashMap<>();
+
     @Override
     public boolean solve(Sudoku sudoku) {
         if (solveImpl(sudoku, false)) return true;
@@ -19,7 +22,7 @@ public class XYChainsStrategy implements SolveStrategy {
     private boolean solveImpl(Sudoku sudoku, boolean backtrack) {
         List<Square> bivalueSquares = SolverUtils.getAllBivalueSquares(sudoku);
         Set<List<Square>> allChains = new LinkedHashSet<>();
-        for (Square square : bivalueSquares) buildChain(square, new ArrayList<>(), allChains, new HashSet<>(), backtrack);
+        for (Square square : bivalueSquares) buildChain(square, new ArrayList<>(), allChains, new SquareSet(sudoku), backtrack);
         for (List<Square> chain : allChains) {
             if (chain.size() < 3) continue;
             Square start = chain.getFirst();
@@ -95,7 +98,7 @@ public class XYChainsStrategy implements SolveStrategy {
         return square1.getCandidates().and(square2.getCandidates()).getFirst();
     }
 
-    private void buildChain(Square square, List<Square> chain, Set<List<Square>> allChains, Set<Square> visited, boolean backtrack) {
+    private void buildChain(Square square, List<Square> chain, Set<List<Square>> allChains, SquareSet visited, boolean backtrack) {
         //System.out.println("buildChain: " + square + " chain: " + chain);
         if (!isValidPartialChain(chain)) return;
         if (visited.contains(square)) {
@@ -104,7 +107,7 @@ public class XYChainsStrategy implements SolveStrategy {
         }
         visited.add(square);
         chain.add(square);
-        List<Square> connectedBivalueSquares = findConnectedBivalueSquares(square);
+        List<Square> connectedBivalueSquares = getConnectedBivalueSquares(square);
         if (connectedBivalueSquares.isEmpty()) {
             allChains.add(chain);
             return;
@@ -114,6 +117,13 @@ public class XYChainsStrategy implements SolveStrategy {
             buildChain(next, new ArrayList<>(chain), allChains, visited, backtrack);
         }
         if (backtrack) visited.remove(square);
+    }
+
+    private List<Square> getConnectedBivalueSquares(Square square) {
+        if (connectedBivalueSquaresCache.containsKey(square)) return connectedBivalueSquaresCache.get(square);
+        List<Square> connectedSquares = findConnectedBivalueSquares(square);
+        connectedBivalueSquaresCache.put(square, connectedSquares);
+        return connectedSquares;
     }
 
     private List<Square> findConnectedBivalueSquares(Square square) {
