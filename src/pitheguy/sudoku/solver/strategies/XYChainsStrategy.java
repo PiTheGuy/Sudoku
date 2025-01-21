@@ -9,17 +9,21 @@ import pitheguy.sudoku.util.SquareSet;
 
 import java.util.*;
 
-public class XYChainsStrategy implements SolveStrategy {
+public class XYChainsStrategy extends SolveStrategy {
     private final Map<Square, List<Square>> connectedBivalueSquaresCache = new HashMap<>();
 
+    public XYChainsStrategy(Sudoku sudoku) {
+        super(sudoku);
+    }
+
     @Override
-    public boolean solve(Sudoku sudoku) {
-        if (solveImpl(sudoku, false)) return true;
-        if (solveImpl(sudoku, true)) return true;
+    public boolean solve() {
+        if (solveImpl(false)) return true;
+        if (solveImpl(true)) return true;
         return false;
     }
 
-    private boolean solveImpl(Sudoku sudoku, boolean backtrack) {
+    private boolean solveImpl(boolean backtrack) {
         List<Square> bivalueSquares = SolverUtils.getAllBivalueSquares(sudoku);
         Set<List<Square>> allChains = new LinkedHashSet<>();
         for (Square square : bivalueSquares) buildChain(square, new ArrayList<>(), allChains, new SquareSet(sudoku), backtrack);

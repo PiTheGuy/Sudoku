@@ -6,6 +6,7 @@ import pitheguy.sudoku.solver.DigitCandidates;
 import pitheguy.sudoku.solver.SolveStrategy;
 import pitheguy.sudoku.solver.SolverUtils;
 import pitheguy.sudoku.util.Pair;
+import pitheguy.sudoku.util.UniquePair;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,9 +15,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class AlignedPairExclusionStrategy implements SolveStrategy {
+public class AlignedPairExclusionStrategy extends SolveStrategy {
+    public AlignedPairExclusionStrategy(Sudoku sudoku) {
+        super(sudoku);
+    }
+
     @Override
-    public boolean solve(Sudoku sudoku) {
+    public boolean solve() {
         List<Square> allSquares = sudoku.getAllSquares();
         for (Square square1 : allSquares) {
             if (square1.isSolved()) continue;

@@ -12,9 +12,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class UniqueRectanglesStrategy implements SolveStrategy {
+public class UniqueRectanglesStrategy extends SolveStrategy {
+    public UniqueRectanglesStrategy(Sudoku sudoku) {
+        super(sudoku);
+    }
+
     @Override
-    public boolean solve(Sudoku sudoku) {
+    public boolean solve() {
         boolean changed = false;
         changed |= Type1.solve(sudoku);
         changed |= Type2.solve(sudoku);

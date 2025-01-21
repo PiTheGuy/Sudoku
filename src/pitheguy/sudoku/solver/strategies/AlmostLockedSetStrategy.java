@@ -13,12 +13,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
-public class AlmostLockedSetStrategy implements SolveStrategy {
+public class AlmostLockedSetStrategy extends SolveStrategy {
     private static final boolean DEBUG = false;
 
+    public AlmostLockedSetStrategy(Sudoku sudoku) {
+        super(sudoku);
+    }
+
     @Override
-    public boolean solve(Sudoku sudoku) {
-        List<AlmostLockedSet> almostLockedSets = findAlmostLockedSets(sudoku);
+    public boolean solve() {
+        List<AlmostLockedSet> almostLockedSets = findAlmostLockedSets();
         if (almostLockedSets.size() < 2) return false;
         for (int i = 0; i < almostLockedSets.size(); i++) {
             AlmostLockedSet set1 = almostLockedSets.get(i);
@@ -95,25 +99,25 @@ public class AlmostLockedSetStrategy implements SolveStrategy {
         return logged;
     }
 
-    private List<AlmostLockedSet> findAlmostLockedSets(Sudoku sudoku) {
+    private List<AlmostLockedSet> findAlmostLockedSets() {
         List<AlmostLockedSet> almostLockedSets = new ArrayList<>();
-        findALSForGroup(sudoku, almostLockedSets, sudoku::getRow);
-        findALSForGroup(sudoku, almostLockedSets, sudoku::getColumn);
-        findALSForGroup(sudoku, almostLockedSets, sudoku::getBox);
+        findALSForGroup(almostLockedSets, sudoku::getRow);
+        findALSForGroup(almostLockedSets, sudoku::getColumn);
+        findALSForGroup(almostLockedSets, sudoku::getBox);
         return almostLockedSets;
     }
 
-    private void findALSForGroup(Sudoku sudoku, List<AlmostLockedSet> almostLockedSets, Function<Integer, List<Square>> groupGetter) {
+    private void findALSForGroup(List<AlmostLockedSet> almostLockedSets, Function<Integer, List<Square>> groupGetter) {
         for (int index = 0; index < 9; index++) {
             List<Square> squares = groupGetter.apply(index);
             squares.removeIf(Square::isSolved);
             squares.removeIf(square -> square.getCandidates().count() == 1);
             for (int size = 2; size <= 5; size++)
-                findALSForSize(sudoku, squares, size, 0, new ArrayList<>(), DigitCandidates.EMPTY, almostLockedSets);
+                findALSForSize(squares, size, 0, new ArrayList<>(), DigitCandidates.EMPTY, almostLockedSets);
         }
     }
 
-    private void findALSForSize(Sudoku sudoku, List<Square> squares, int size, int start, List<Square> current, DigitCandidates candidates, List<AlmostLockedSet> result) {
+    private void findALSForSize(List<Square> squares, int size, int start, List<Square> current, DigitCandidates candidates, List<AlmostLockedSet> result) {
         if (size > squares.size()) return;
         if (candidates.count() > size + 1) return;
         if (current.size() == size) {
@@ -127,7 +131,7 @@ public class AlmostLockedSetStrategy implements SolveStrategy {
                 continue;
             current.add(square);
             DigitCandidates newCandidates = candidates.or(square.getCandidates());
-            findALSForSize(sudoku, squares, size, i + 1, current, newCandidates, result);
+            findALSForSize(squares, size, i + 1, current, newCandidates, result);
             current.removeLast();
         }
     }

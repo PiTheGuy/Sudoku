@@ -8,16 +8,20 @@ import pitheguy.sudoku.util.Pair;
 
 import java.util.*;
 
-public class XWingStrategy implements SolveStrategy {
+public class XWingStrategy extends SolveStrategy {
+    public XWingStrategy(Sudoku sudoku) {
+        super(sudoku);
+    }
+
     @Override
-    public boolean solve(Sudoku sudoku) {
+    public boolean solve() {
         boolean changed = false;
-        changed |= solveImpl(sudoku, false);
-        changed |= solveImpl(sudoku, true);
+        changed |= solveImpl(false);
+        changed |= solveImpl(true);
         return changed;
     }
 
-    private boolean solveImpl(Sudoku sudoku, boolean isRow) {
+    private boolean solveImpl(boolean isRow) {
         boolean changed = false;
         for (int digit = 1; digit <= 9; digit++) {
             List<Square>[] matchesByIndex = new List[9];

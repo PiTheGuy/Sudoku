@@ -9,8 +9,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class NakedTripletsStrategy extends ByGroupSolveStrategy {
+    public NakedTripletsStrategy(Sudoku sudoku) {
+        super(sudoku);
+    }
+
     @Override
-    protected boolean solveGroup(Sudoku sudoku, List<Square> squares) {
+    protected boolean solveGroup(List<Square> squares) {
         boolean changed = false;
         for (int i = 0; i < 7; i++) {
             Square square = squares.get(i);

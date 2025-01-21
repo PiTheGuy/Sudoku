@@ -9,8 +9,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class NakedPairsStrategy extends ByGroupSolveStrategy {
+    public NakedPairsStrategy(Sudoku sudoku) {
+        super(sudoku);
+    }
+
     @Override
-    protected boolean solveGroup(Sudoku sudoku, List<Square> squares) {
+    protected boolean solveGroup(List<Square> squares) {
         boolean changed = false;
         for (int i = 0; i < squares.size() - 1; i++) {
             Square square = squares.get(i);

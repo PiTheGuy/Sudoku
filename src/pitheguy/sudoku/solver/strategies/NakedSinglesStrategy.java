@@ -5,19 +5,20 @@ import pitheguy.sudoku.gui.Sudoku;
 import pitheguy.sudoku.solver.DigitCandidates;
 import pitheguy.sudoku.solver.SolveStrategy;
 
-public class NakedSinglesStrategy implements SolveStrategy {
+public class NakedSinglesStrategy extends SolveStrategy {
+    public NakedSinglesStrategy(Sudoku sudoku) {
+        super(sudoku);
+    }
+
     @Override
-    public boolean solve(Sudoku sudoku) {
+    public boolean solve() {
         boolean changed = false;
-        for (int row = 0; row < 9; row++) {
-            for (int col = 0; col < 9; col++) {
-                Square square = sudoku.getSquare(row, col);
-                if (square.isSolved()) continue;
-                DigitCandidates candidates = square.getCandidates();
-                if (candidates.count() == 1) {
-                    square.setValue(String.valueOf(candidates.getFirst()));
-                    changed = true;
-                }
+        for (Square square : sudoku.getAllSquares()) {
+            if (square.isSolved()) continue;
+            DigitCandidates candidates = square.getCandidates();
+            if (candidates.count() == 1) {
+                square.setValue(String.valueOf(candidates.getFirst()));
+                changed = true;
             }
         }
         return changed;

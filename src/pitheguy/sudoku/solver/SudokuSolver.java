@@ -26,33 +26,33 @@ public class SudokuSolver {
 
     private boolean stepSolve() {
         List<SolveStrategy> strategies = Arrays.asList(
-                new NakedSinglesStrategy(),
-                new HiddenSinglesStrategy(),
-                new PointingPairsAndTriosStrategy(),
-                new ClaimingPairsAndTriosStrategy(),
-                new NakedPairsStrategy(),
-                new HiddenPairsStrategy(),
-                new NakedTripletsStrategy(),
-                new HiddenTripletsStrategy(),
-                new XWingStrategy(),
-                new XYWingStrategy(),
-                new BugStrategy(),
-                new RectangleEliminationStrategy(),
-                new SwordfishStrategy(),
-                new XYZWingStrategy(),
-                new XYChainsStrategy(),
-                new JellyfishStrategy(),
-                new UniqueRectanglesStrategy(),
-                new HiddenUniqueRectanglesStrategy(),
-                new AlignedPairExclusionStrategy(),
-                new AlmostLockedSetStrategy(),
-                new PatternOverlayMethodStrategy()
+                new NakedSinglesStrategy(sudoku),
+                new HiddenSinglesStrategy(sudoku),
+                new PointingPairsAndTriosStrategy(sudoku),
+                new ClaimingPairsAndTriosStrategy(sudoku),
+                new NakedPairsStrategy(sudoku),
+                new HiddenPairsStrategy(sudoku),
+                new NakedTripletsStrategy(sudoku),
+                new HiddenTripletsStrategy(sudoku),
+                new XWingStrategy(sudoku),
+                new XYWingStrategy(sudoku),
+                new BugStrategy(sudoku),
+                new RectangleEliminationStrategy(sudoku),
+                new SwordfishStrategy(sudoku),
+                new XYZWingStrategy(sudoku),
+                new XYChainsStrategy(sudoku),
+                new JellyfishStrategy(sudoku),
+                new UniqueRectanglesStrategy(sudoku),
+                new HiddenUniqueRectanglesStrategy(sudoku),
+                new AlignedPairExclusionStrategy(sudoku),
+                new AlmostLockedSetStrategy(sudoku),
+                new PatternOverlayMethodStrategy(sudoku)
         );
 
         boolean anySolved = false;
 
         for (SolveStrategy strategy : strategies) {
-            if (strategy.solve(sudoku)) {
+            if (strategy.solve()) {
                 if (!RUN_ALL) return true;
                 anySolved = true;
             }

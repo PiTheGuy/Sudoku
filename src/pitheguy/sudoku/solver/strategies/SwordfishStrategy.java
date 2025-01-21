@@ -6,16 +6,20 @@ import pitheguy.sudoku.solver.SolveStrategy;
 
 import java.util.*;
 
-public class SwordfishStrategy implements SolveStrategy {
+public class SwordfishStrategy extends SolveStrategy {
+    public SwordfishStrategy(Sudoku sudoku) {
+        super(sudoku);
+    }
+
     @Override
-    public boolean solve(Sudoku sudoku) {
+    public boolean solve() {
         boolean changed = false;
-        changed |= solveImpl(sudoku, true);
-        changed |= solveImpl(sudoku, false);
+        changed |= solveImpl(true);
+        changed |= solveImpl(false);
         return changed;
     }
 
-    private boolean solveImpl(Sudoku sudoku, boolean isRow) {
+    private boolean solveImpl(boolean isRow) {
         boolean changed = false;
         for (int digit = 1; digit <= 9; digit++) {
             Map<Integer, List<Square>> hasDigit = new HashMap<>();

@@ -8,18 +8,22 @@ import pitheguy.sudoku.solver.SolverUtils;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ClaimingPairsAndTriosStrategy implements SolveStrategy {
+public class ClaimingPairsAndTriosStrategy extends SolveStrategy {
+    public ClaimingPairsAndTriosStrategy(Sudoku sudoku) {
+        super(sudoku);
+    }
+
     @Override
-    public boolean solve(Sudoku sudoku) {
+    public boolean solve() {
         boolean changed = false;
         for (int i = 0; i < 9; i++) {
-            changed |= solveImpl(sudoku, sudoku.getRow(i));
-            changed |= solveImpl(sudoku, sudoku.getColumn(i));
+            changed |= solveImpl(sudoku.getRow(i));
+            changed |= solveImpl(sudoku.getColumn(i));
         }
         return changed;
     }
 
-    private boolean solveImpl(Sudoku sudoku, List<Square> squares) {
+    private boolean solveImpl(List<Square> squares) {
         boolean changed = false;
         for (int digit = 1; digit <= 9; digit++) {
             if (SolverUtils.hasDigitSolved(squares, digit)) continue;

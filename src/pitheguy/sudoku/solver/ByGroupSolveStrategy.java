@@ -5,18 +5,22 @@ import pitheguy.sudoku.gui.Sudoku;
 
 import java.util.List;
 
-public abstract class ByGroupSolveStrategy implements SolveStrategy {
+public abstract class ByGroupSolveStrategy extends SolveStrategy {
+
+    public ByGroupSolveStrategy(Sudoku sudoku) {
+        super(sudoku);
+    }
 
     @Override
-    public boolean solve(Sudoku sudoku) {
+    public boolean solve() {
         boolean changed = false;
         for (int i = 0; i < 9; i++) {
-            changed |= solveGroup(sudoku, sudoku.getRow(i));
-            changed |= solveGroup(sudoku, sudoku.getColumn(i));
-            changed |= solveGroup(sudoku, sudoku.getBox(i));
+            changed |= solveGroup(sudoku.getRow(i));
+            changed |= solveGroup(sudoku.getColumn(i));
+            changed |= solveGroup(sudoku.getBox(i));
         }
         return changed;
     }
 
-    protected abstract boolean solveGroup(Sudoku sudoku, List<Square> squares);
+    protected abstract boolean solveGroup(List<Square> squares);
 }

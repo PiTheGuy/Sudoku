@@ -8,8 +8,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class HiddenPairsStrategy extends ByGroupSolveStrategy {
+    public HiddenPairsStrategy(Sudoku sudoku) {
+        super(sudoku);
+    }
+
     @Override
-    protected boolean solveGroup(Sudoku sudoku, List<Square> squares) {
+    protected boolean solveGroup(List<Square> squares) {
         boolean changed = false;
         for (int d1 = 1; d1 <= 9; d1++) {
             if (SolverUtils.hasDigitSolved(squares, d1)) continue;

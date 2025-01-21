@@ -6,9 +6,13 @@ import pitheguy.sudoku.solver.SolveStrategy;
 
 import java.util.List;
 
-public class PointingPairsAndTriosStrategy implements SolveStrategy {
+public class PointingPairsAndTriosStrategy extends SolveStrategy {
+    public PointingPairsAndTriosStrategy(Sudoku sudoku) {
+        super(sudoku);
+    }
+
     @Override
-    public boolean solve(Sudoku sudoku) {
+    public boolean solve() {
         boolean changed = false;
         for (int box = 0; box < 9; box++) {
             Box box1 = sudoku.boxes[box];

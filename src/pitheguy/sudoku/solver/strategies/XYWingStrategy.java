@@ -8,9 +8,13 @@ import pitheguy.sudoku.solver.SolverUtils;
 import java.util.ArrayList;
 import java.util.List;
 
-public class XYWingStrategy implements SolveStrategy {
+public class XYWingStrategy extends SolveStrategy {
+    public XYWingStrategy(Sudoku sudoku) {
+        super(sudoku);
+    }
+
     @Override
-    public boolean solve(Sudoku sudoku) {
+    public boolean solve() {
         boolean changed = false;
         List<Square> bivalueCells = new ArrayList<>();
         for (int row = 0; row < 9; row++) {

@@ -11,23 +11,27 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
-public class PatternOverlayMethodStrategy implements SolveStrategy {
+public class PatternOverlayMethodStrategy extends SolveStrategy {
+    public PatternOverlayMethodStrategy(Sudoku sudoku) {
+        super(sudoku);
+    }
+
     @Override
-    public boolean solve(Sudoku sudoku) {
+    public boolean solve() {
         boolean changed = false;
         for (int digit = 1; digit <= 9; digit++) {
             SquareSet containedCells = new SquareSet(sudoku);
             for (Square square : sudoku.getAllSquares())
                 if (!square.isSolved() && square.getCandidates().contains(digit)) containedCells.add(square);
             if (containedCells.size() > 40) continue; // Too many patterns to search through
-            Set<SquareSet> patterns = findPatterns(sudoku, containedCells);
+            Set<SquareSet> patterns = findPatterns(containedCells);
             if (patterns.isEmpty()) continue;
             int finalDigit = digit;
             patterns.removeIf(pattern -> {
                 boolean valid = true;
-                valid &= checkGroup(sudoku, sudoku::getRow, pattern, finalDigit);
-                valid &= checkGroup(sudoku, sudoku::getColumn, pattern, finalDigit);
-                valid &= checkGroup(sudoku, sudoku::getBox, pattern, finalDigit);
+                valid &= checkGroup(sudoku::getRow, pattern, finalDigit);
+                valid &= checkGroup(sudoku::getColumn, pattern, finalDigit);
+                valid &= checkGroup(sudoku::getBox, pattern, finalDigit);
                 return !valid;
             });
             SquareSet coveredCells = new SquareSet(sudoku);
@@ -38,7 +42,7 @@ public class PatternOverlayMethodStrategy implements SolveStrategy {
         return changed;
     }
 
-    private boolean checkGroup(Sudoku sudoku, Function<Integer, List<Square>> groupGetter, SquareSet pattern, int digit) {
+    private boolean checkGroup(Function<Integer, List<Square>> groupGetter, SquareSet pattern, int digit) {
         boolean valid = true;
         for (int i = 0; i < 9; i++) {
             List<Square> squares = groupGetter.apply(i);
@@ -47,7 +51,7 @@ public class PatternOverlayMethodStrategy implements SolveStrategy {
         return valid;
     }
 
-    private Set<SquareSet> findPatterns(Sudoku sudoku, SquareSet squares) {
+    private Set<SquareSet> findPatterns(SquareSet squares) {
         Set<SquareSet> patterns = new HashSet<>();
         SquareSet remainingSquares = squares.copy();
         SquareSet pattern = new SquareSet(sudoku);

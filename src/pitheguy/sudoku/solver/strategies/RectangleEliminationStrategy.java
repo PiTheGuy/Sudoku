@@ -7,21 +7,25 @@ import pitheguy.sudoku.solver.SolverUtils;
 
 import java.util.*;
 
-public class RectangleEliminationStrategy implements SolveStrategy {
+public class RectangleEliminationStrategy extends SolveStrategy {
+    public RectangleEliminationStrategy(Sudoku sudoku) {
+        super(sudoku);
+    }
+
     @Override
-    public boolean solve(Sudoku sudoku) {
+    public boolean solve() {
         for (int digit = 1; digit <= 9; digit++) {
             for (int row = 0; row < 9; row++) {
                 for (int col = 0; col < 9; col++) {
-                    if (solveImpl(sudoku, sudoku.getSquare(row, col), digit, true)) return true;
-                    if (solveImpl(sudoku, sudoku.getSquare(row, col), digit, false)) return true;
+                    if (solveImpl(sudoku.getSquare(row, col), digit, true)) return true;
+                    if (solveImpl(sudoku.getSquare(row, col), digit, false)) return true;
                 }
             }
         }
         return false;
     }
 
-    private static boolean solveImpl(Sudoku sudoku, Square square, int digit, boolean isRow) {
+    private boolean solveImpl(Square square, int digit, boolean isRow) {
         if (square.isSolved()) return false;
         List<Square> squares = isRow ? square.getSurroundingRow() : square.getSurroundingColumn();
         if (SolverUtils.hasDigitSolved(squares, digit)) return false;

@@ -9,8 +9,12 @@ import java.util.List;
 import java.util.Optional;
 
 public class HiddenSinglesStrategy extends ByGroupSolveStrategy {
+    public HiddenSinglesStrategy(Sudoku sudoku) {
+        super(sudoku);
+    }
+
     @Override
-    public boolean solveGroup(Sudoku sudoku, List<Square> squares) {
+    public boolean solveGroup(List<Square> squares) {
         boolean changed = false;
         for (int digit = 1; digit <= 9; digit++) {
             if (SolverUtils.hasDigitSolved(squares, digit)) continue;

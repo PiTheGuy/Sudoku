@@ -7,8 +7,12 @@ import pitheguy.sudoku.solver.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class XYZWingStrategy implements SolveStrategy {
-    public boolean solve(Sudoku sudoku) {
+public class XYZWingStrategy extends SolveStrategy {
+    public XYZWingStrategy(Sudoku sudoku) {
+        super(sudoku);
+    }
+
+    public boolean solve() {
         boolean changed = false;
         List<Square> trivalueCells = new ArrayList<>();
         List<Square> bivalueCells = new ArrayList<>();

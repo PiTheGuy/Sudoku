@@ -7,9 +7,13 @@ import pitheguy.sudoku.solver.SolverUtils;
 
 import java.util.*;
 
-public class BugStrategy implements SolveStrategy {
+public class BugStrategy extends SolveStrategy {
+    public BugStrategy(Sudoku sudoku) {
+        super(sudoku);
+    }
+
     @Override
-    public boolean solve(Sudoku sudoku) {
+    public boolean solve() {
         boolean changed = false;
         Optional<Square> bugSquareOptional = SolverUtils.getOnlySquareThat(sudoku.getAllSquares(),
                 square -> square.getCandidates().count() != 2,
