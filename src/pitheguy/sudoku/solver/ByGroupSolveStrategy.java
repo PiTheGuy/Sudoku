@@ -2,6 +2,7 @@ package pitheguy.sudoku.solver;
 
 import pitheguy.sudoku.gui.Square;
 import pitheguy.sudoku.gui.Sudoku;
+import pitheguy.sudoku.util.SquareSet;
 
 import java.util.List;
 
@@ -22,5 +23,5 @@ public abstract class ByGroupSolveStrategy extends SolveStrategy {
         return changed;
     }
 
-    protected abstract boolean solveGroup(List<Square> squares);
+    protected abstract boolean solveGroup(SquareSet squares);
 }

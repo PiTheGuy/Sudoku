@@ -3,6 +3,7 @@ package pitheguy.sudoku.solver;
 import pitheguy.sudoku.gui.Square;
 import pitheguy.sudoku.gui.Sudoku;
 import pitheguy.sudoku.solver.strategies.*;
+import pitheguy.sudoku.util.SquareSet;
 
 import java.util.Arrays;
 import java.util.List;
@@ -74,7 +75,7 @@ public class SudokuSolver {
         }
     }
 
-    private static void removeInvalidCandidates(DigitCandidates candidates, List<Square> squares) {
+    private static void removeInvalidCandidates(DigitCandidates candidates, SquareSet squares) {
         for (Square square : squares) {
             if (!square.isSolved()) continue;
             int digit = square.getValue().charAt(0) - '0';

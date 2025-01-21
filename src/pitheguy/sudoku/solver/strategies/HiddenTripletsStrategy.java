@@ -3,6 +3,7 @@ package pitheguy.sudoku.solver.strategies;
 import pitheguy.sudoku.gui.Square;
 import pitheguy.sudoku.gui.Sudoku;
 import pitheguy.sudoku.solver.*;
+import pitheguy.sudoku.util.SquareSet;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,7 +14,7 @@ public class HiddenTripletsStrategy extends ByGroupSolveStrategy {
     }
 
     @Override
-    protected boolean solveGroup(List<Square> squares) {
+    protected boolean solveGroup(SquareSet squares) {
         boolean changed = false;
         for (int d1 = 1; d1 <= 9; d1++) {
             if (SolverUtils.hasDigitSolved(squares, d1)) continue;
@@ -28,7 +29,7 @@ public class HiddenTripletsStrategy extends ByGroupSolveStrategy {
         return changed;
     }
 
-    private static boolean process(List<Square> squares, int d1, int d2, int d3) {
+    private static boolean process(SquareSet squares, int d1, int d2, int d3) {
         boolean changed = false;
         List<Square> tripletSquares = new ArrayList<>();
         for (Square square : squares) {

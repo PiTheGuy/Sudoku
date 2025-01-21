@@ -6,6 +6,7 @@ import pitheguy.sudoku.solver.DigitCandidates;
 import pitheguy.sudoku.solver.SolveStrategy;
 import pitheguy.sudoku.solver.SolverUtils;
 import pitheguy.sudoku.util.Pair;
+import pitheguy.sudoku.util.SquareSet;
 import pitheguy.sudoku.util.UniquePair;
 
 import java.util.ArrayList;
@@ -82,7 +83,7 @@ public class AlignedPairExclusionStrategy extends SolveStrategy {
     }
 
     private List<UniquePair<DigitCandidates, Square>> getConnectedSquareCandidates(Square square1, Square square2) {
-        Set<Square> squares = new HashSet<>();
+        SquareSet squares = new SquareSet(sudoku);
         if (square1.getRow() == square2.getRow()) squares.addAll(square1.getSurroundingRow());
         if (square1.getCol() == square2.getCol()) squares.addAll(square1.getSurroundingColumn());
         if (square1.getBox() == square2.getBox()) squares.addAll(square1.getSurroundingBox());

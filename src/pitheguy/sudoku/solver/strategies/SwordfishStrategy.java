@@ -3,6 +3,7 @@ package pitheguy.sudoku.solver.strategies;
 import pitheguy.sudoku.gui.Square;
 import pitheguy.sudoku.gui.Sudoku;
 import pitheguy.sudoku.solver.SolveStrategy;
+import pitheguy.sudoku.util.SquareSet;
 
 import java.util.*;
 
@@ -24,7 +25,7 @@ public class SwordfishStrategy extends SolveStrategy {
         for (int digit = 1; digit <= 9; digit++) {
             Map<Integer, List<Square>> hasDigit = new HashMap<>();
             for (int index = 0; index < 9; index++) {
-                List<Square> squares = isRow ? sudoku.getRow(index) : sudoku.getColumn(index);
+                SquareSet squares = isRow ? sudoku.getRow(index) : sudoku.getColumn(index);
                 for (Square square : squares)
                     if (!square.isSolved() && square.getCandidates().contains(digit))
                         hasDigit.computeIfAbsent(index, k -> new ArrayList<>()).add(square);
@@ -48,7 +49,7 @@ public class SwordfishStrategy extends SolveStrategy {
                         for (Square square : hasDigit.get(index3)) reverseIndexes.add(isRow ? square.getCol() : square.getRow());
                         if (reverseIndexes.size() != 3) continue;
                         for (int reverseIndex : reverseIndexes) {
-                            List<Square> squares = isRow ? sudoku.getColumn(reverseIndex) : sudoku.getRow(reverseIndex);
+                            SquareSet squares = isRow ? sudoku.getColumn(reverseIndex) : sudoku.getRow(reverseIndex);
                             for (Square square : squares) {
                                 if (square.isSolved()) continue;
                                 int index = isRow ? square.getRow() : square.getCol();

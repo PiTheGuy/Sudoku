@@ -3,10 +3,13 @@ package pitheguy.sudoku.util;
 import pitheguy.sudoku.gui.Square;
 import pitheguy.sudoku.gui.Sudoku;
 
+import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.function.Predicate;
 
 public class SquareSet implements Iterable<Square> {
     private final Sudoku sudoku;
@@ -58,6 +61,10 @@ public class SquareSet implements Iterable<Square> {
         removeAll(new SquareSet(sudoku, c));
     }
 
+    public void removeIf(Predicate<Square> filter) {
+        for (Square square : this) if (filter.test(square)) remove(square);
+    }
+
     public boolean contains(Square square) {
         return contained.get(square.getRow() * 9 + square.getCol());
     }
@@ -68,6 +75,12 @@ public class SquareSet implements Iterable<Square> {
 
     public SquareSet copy() {
         return new SquareSet(sudoku, contained);
+    }
+
+    public List<Square> toList() {
+        List<Square> list = new ArrayList<>();
+        for (Square square : this) list.add(square);
+        return list;
     }
 
     @Override

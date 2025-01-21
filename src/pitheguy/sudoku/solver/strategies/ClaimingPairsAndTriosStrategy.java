@@ -4,6 +4,7 @@ import pitheguy.sudoku.gui.Square;
 import pitheguy.sudoku.gui.Sudoku;
 import pitheguy.sudoku.solver.SolveStrategy;
 import pitheguy.sudoku.solver.SolverUtils;
+import pitheguy.sudoku.util.SquareSet;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,7 +24,7 @@ public class ClaimingPairsAndTriosStrategy extends SolveStrategy {
         return changed;
     }
 
-    private boolean solveImpl(List<Square> squares) {
+    private boolean solveImpl(SquareSet squares) {
         boolean changed = false;
         for (int digit = 1; digit <= 9; digit++) {
             if (SolverUtils.hasDigitSolved(squares, digit)) continue;

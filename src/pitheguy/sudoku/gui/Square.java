@@ -1,6 +1,7 @@
 package pitheguy.sudoku.gui;
 
 import pitheguy.sudoku.solver.DigitCandidates;
+import pitheguy.sudoku.util.SquareSet;
 
 import javax.swing.*;
 import java.awt.*;
@@ -61,7 +62,7 @@ public class Square extends JPanel {
         return !getValue().isEmpty();
     }
 
-    private void performCandidateElimination(List<Square> squares, int digit) {
+    private void performCandidateElimination(SquareSet squares, int digit) {
         for (Square square : squares) {
             if (!square.getValue().isEmpty()) continue;
             square.getCandidates().remove(digit);
@@ -84,15 +85,15 @@ public class Square extends JPanel {
         return (row / 3) * 3 + (col / 3);
     }
 
-    public List<Square> getSurroundingRow() {
+    public SquareSet getSurroundingRow() {
         return sudoku.getRow(row);
     }
 
-    public List<Square> getSurroundingColumn() {
+    public SquareSet getSurroundingColumn() {
         return sudoku.getColumn(col);
     }
 
-    public List<Square> getSurroundingBox() {
+    public SquareSet getSurroundingBox() {
         return sudoku.getBox(getBox());
     }
 

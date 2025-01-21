@@ -10,7 +10,7 @@ import pitheguy.sudoku.util.SquareSet;
 import java.util.*;
 
 public class XYChainsStrategy extends SolveStrategy {
-    private final Map<Square, List<Square>> connectedBivalueSquaresCache = new HashMap<>();
+    private final Map<Square, SquareSet> connectedBivalueSquaresCache = new HashMap<>();
 
     public XYChainsStrategy(Sudoku sudoku) {
         super(sudoku);
@@ -112,7 +112,7 @@ public class XYChainsStrategy extends SolveStrategy {
         }
         visited.add(square);
         chain.add(square);
-        List<Square> connectedBivalueSquares = getConnectedBivalueSquares(square);
+        SquareSet connectedBivalueSquares = getConnectedBivalueSquares(square);
         if (connectedBivalueSquares.isEmpty()) {
             allChains.add(chain);
             return;
@@ -124,22 +124,22 @@ public class XYChainsStrategy extends SolveStrategy {
         if (backtrack) visited.remove(square);
     }
 
-    private List<Square> getConnectedBivalueSquares(Square square) {
+    private SquareSet getConnectedBivalueSquares(Square square) {
         if (connectedBivalueSquaresCache.containsKey(square)) return connectedBivalueSquaresCache.get(square);
-        List<Square> connectedSquares = findConnectedBivalueSquares(square);
+        SquareSet connectedSquares = findConnectedBivalueSquares(square);
         connectedBivalueSquaresCache.put(square, connectedSquares);
         return connectedSquares;
     }
 
-    private List<Square> findConnectedBivalueSquares(Square square) {
-        List<Square> connectedSquares = new ArrayList<>();
+    private SquareSet findConnectedBivalueSquares(Square square) {
+        SquareSet connectedSquares = new SquareSet(sudoku);
         addConnectedBivalueCells(square.getSurroundingRow(), square, connectedSquares);
         addConnectedBivalueCells(square.getSurroundingColumn(), square, connectedSquares);
         addConnectedBivalueCells(square.getSurroundingBox(), square, connectedSquares);
         return connectedSquares;
     }
 
-    private static void addConnectedBivalueCells(List<Square> group, Square square, List<Square> connectedSquares) {
+    private static void addConnectedBivalueCells(SquareSet group, Square square, SquareSet connectedSquares) {
         for (Square current : group)
             if (current != square && !current.isSolved() && current.getCandidates().count() == 2 &&
                 current.getCandidates().or(square.getCandidates()).count() != 4) connectedSquares.add(current);

@@ -2,6 +2,7 @@ package pitheguy.sudoku.solver;
 
 import pitheguy.sudoku.gui.Square;
 import pitheguy.sudoku.gui.Sudoku;
+import pitheguy.sudoku.util.SquareSet;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -13,7 +14,7 @@ public class SolverUtils {
                square1.getBox() == square2.getBox();
     }
 
-    public static boolean hasDigitSolved(List<Square> squares, int digit) {
+    public static boolean hasDigitSolved(Iterable<Square> squares, int digit) {
         for (Square square : squares) {
             String value = square.getValue();
             if (value.isEmpty()) continue;
@@ -22,7 +23,7 @@ public class SolverUtils {
         return false;
     }
 
-    public static Optional<Square> getOnlySquareThat(List<Square> squares, Predicate<Square> condition, boolean excludeSolvedSquares) {
+    public static Optional<Square> getOnlySquareThat(Iterable<Square> squares, Predicate<Square> condition, boolean excludeSolvedSquares) {
         Optional<Square> result = Optional.empty();
         for (Square current : squares) {
             if (excludeSolvedSquares && current.isSolved()) continue;
