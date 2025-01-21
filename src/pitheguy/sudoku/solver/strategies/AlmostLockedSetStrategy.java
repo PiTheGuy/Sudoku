@@ -26,7 +26,7 @@ public class AlmostLockedSetStrategy implements SolveStrategy {
                 AlmostLockedSet set2 = almostLockedSets.get(j);
                 DigitCandidates commonCandidates = set1.candidates.and(set2.candidates);
                 if (commonCandidates.isEmpty()) continue;
-                if (set1.candidates.or(set2.candidates).count() == Math.max(set1.candidates.count(),set2.candidates.count())) continue;
+                if (set1.candidates.equals(set2.candidates)) continue;
                 List<Pair<Square>> connectedPairs = new ArrayList<>();
                 for (Square square1 : set1.squares) {
                     for (Square square2 : set2.squares) {
