@@ -2,6 +2,7 @@ package pitheguy.sudoku.solver.strategies;
 
 import pitheguy.sudoku.gui.Square;
 import pitheguy.sudoku.gui.Sudoku;
+import pitheguy.sudoku.solver.AlmostLockedSet;
 import pitheguy.sudoku.solver.DigitCandidates;
 import pitheguy.sudoku.solver.SolveStrategy;
 import pitheguy.sudoku.solver.SolverUtils;
@@ -24,12 +25,12 @@ public class AlmostLockedSetStrategy implements SolveStrategy {
             sets:
             for (int j = i + 1; j < almostLockedSets.size(); j++) {
                 AlmostLockedSet set2 = almostLockedSets.get(j);
-                DigitCandidates commonCandidates = set1.candidates.and(set2.candidates);
+                DigitCandidates commonCandidates = set1.getCommonCandidates(set2);
                 if (commonCandidates.isEmpty()) continue;
-                if (set1.candidates.equals(set2.candidates)) continue;
+                if (set1.candidates().equals(set2.candidates())) continue;
                 List<Pair<Square>> connectedPairs = new ArrayList<>();
-                for (Square square1 : set1.squares) {
-                    for (Square square2 : set2.squares) {
+                for (Square square1 : set1.squares()) {
+                    for (Square square2 : set2.squares()) {
                         if (square1 == square2) continue sets;
                         if (SolverUtils.isConnected(square1, square2)) connectedPairs.add(new Pair<>(square1, square2));
                     }
@@ -47,8 +48,8 @@ public class AlmostLockedSetStrategy implements SolveStrategy {
                 restrictedCommons.removeIf(rc -> {
                    SquareSet set1Contains = new SquareSet(sudoku);
                    SquareSet set2Contains = new SquareSet(sudoku);
-                   for (Square square : set1.squares) if (square.getCandidates().contains(rc)) set1Contains.add(square);
-                   for (Square square : set2.squares) if (square.getCandidates().contains(rc)) set2Contains.add(square);
+                   for (Square square : set1.squares()) if (square.getCandidates().contains(rc)) set1Contains.add(square);
+                   for (Square square : set2.squares()) if (square.getCandidates().contains(rc)) set2Contains.add(square);
                    for (Square square1 : set1Contains) {
                        for (Square square2 : set2Contains) {
                            if (!SolverUtils.isConnected(square1, square2)) return true;
@@ -63,8 +64,8 @@ public class AlmostLockedSetStrategy implements SolveStrategy {
                 boolean changed = false;
                 for (int z : otherCommons) {
                     SquareSet bothSets = new SquareSet(sudoku);
-                    bothSets.addAll(set1.squares);
-                    bothSets.addAll(set2.squares);
+                    bothSets.addAll(set1.squares());
+                    bothSets.addAll(set2.squares());
                     SquareSet containsZ = new SquareSet(sudoku);
                     boolean logged = false;
                     for (Square square : bothSets) if (square.getCandidates().contains(z)) containsZ.add(square);
@@ -117,7 +118,7 @@ public class AlmostLockedSetStrategy implements SolveStrategy {
         if (candidates.count() > size + 1) return;
         if (current.size() == size) {
             if (candidates.count() == size + 1)
-                result.add(new AlmostLockedSet(new SquareSet(sudoku, current.toArray(new Square[0])), candidates));
+                result.add(new AlmostLockedSet(new SquareSet(sudoku, current), candidates));
             return;
         }
         for (int i = start; i < squares.size(); i++) {
@@ -130,6 +131,4 @@ public class AlmostLockedSetStrategy implements SolveStrategy {
             current.removeLast();
         }
     }
-
-    private record AlmostLockedSet(SquareSet squares, DigitCandidates candidates) {}
 }

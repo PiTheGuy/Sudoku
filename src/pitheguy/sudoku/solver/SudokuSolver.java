@@ -43,9 +43,10 @@ public class SudokuSolver {
                 new XYChainsStrategy(),
                 new JellyfishStrategy(),
                 new UniqueRectanglesStrategy(),
+                new HiddenUniqueRectanglesStrategy(),
                 new AlignedPairExclusionStrategy(),
                 new AlmostLockedSetStrategy(),
-                new HiddenUniqueRectanglesStrategy()
+                new PatternOverlayMethodStrategy()
         );
 
         boolean anySolved = false;

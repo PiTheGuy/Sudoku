@@ -4,6 +4,7 @@ import pitheguy.sudoku.gui.Square;
 import pitheguy.sudoku.gui.Sudoku;
 
 import java.util.BitSet;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -15,9 +16,9 @@ public class SquareSet implements Iterable<Square> {
         this(sudoku, new BitSet(81));
     }
 
-    public SquareSet(Sudoku sudoku, Square... squares) {
+    public SquareSet(Sudoku sudoku, Collection<Square> squares) {
         this(sudoku, new BitSet(81));
-        for (Square square : squares) add(square);
+        addAll(squares);
     }
 
     private SquareSet(Sudoku sudoku, BitSet contained) {
@@ -29,6 +30,10 @@ public class SquareSet implements Iterable<Square> {
         return contained.cardinality();
     }
 
+    public boolean isEmpty() {
+        return contained.isEmpty();
+    }
+
     public void add(Square square) {
         contained.set(square.getRow() * 9 + square.getCol());
     }
@@ -37,12 +42,28 @@ public class SquareSet implements Iterable<Square> {
         contained.or(squareSet.contained);
     }
 
+    public void addAll(Collection<Square> squares) {
+        for (Square square : squares) add(square);
+    }
+
     public void remove(Square square) {
         contained.clear(square.getRow() * 9 + square.getCol());
     }
 
+    public void removeAll(SquareSet squareSet) {
+        contained.andNot(squareSet.contained);
+    }
+
+    public void removeAll(Collection<Square> c) {
+        removeAll(new SquareSet(sudoku, c));
+    }
+
     public boolean contains(Square square) {
         return contained.get(square.getRow() * 9 + square.getCol());
+    }
+
+    public boolean containsAny(SquareSet squareSet) {
+        return contained.intersects(squareSet.contained);
     }
 
     public SquareSet copy() {
