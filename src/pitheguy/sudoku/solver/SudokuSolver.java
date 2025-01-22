@@ -44,6 +44,7 @@ public class SudokuSolver {
                 new JellyfishStrategy(sudoku),
                 new UniqueRectanglesStrategy(sudoku),
                 new HiddenUniqueRectanglesStrategy(sudoku),
+                new WXYZWingStrategy(sudoku),
                 new AlignedPairExclusionStrategy(sudoku),
                 new AlmostLockedSetStrategy(sudoku),
                 new PatternOverlayMethodStrategy(sudoku)

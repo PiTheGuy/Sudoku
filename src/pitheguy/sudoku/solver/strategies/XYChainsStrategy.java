@@ -31,19 +31,28 @@ public class XYChainsStrategy extends SolveStrategy {
             if (chain.size() < 3) continue;
             Square start = chain.getFirst();
             Square end = chain.getLast();
-            if (start.getCandidates().or(end.getCandidates()).count() != 3) continue;
-            int sharedCandidate = getSharedCandidate(start, end);
-            if (sharedCandidate == -1) continue;
-            if (!isValidChain(chain, sharedCandidate)) continue;
-            //System.out.println("Chain found: " + chain);
-            for (Square square : sudoku.getAllSquares()) {
-                if (square.isSolved()) continue;
-                if (chain.contains(square)) continue;
-                if (SolverUtils.isConnected(square, start) &&
-                    SolverUtils.isConnected(square, end)) {
-                    //System.out.println("Removing " + sharedCandidate + " from " + square);
-                    if (square.getCandidates().remove(sharedCandidate)) return true;
-                }
+            if (start.getCandidates().equals(end.getCandidates()))
+                for (int candidate : start.getCandidates().getAllCandidates())
+                    if (processXYChain(chain, candidate)) return true;
+            if (start.getCandidates().or(end.getCandidates()).count() == 3) {
+                int sharedCandidate = getSharedCandidate(start, end);
+                if (sharedCandidate == -1) continue;
+                if (processXYChain(chain, sharedCandidate)) return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean processXYChain(List<Square> chain, int candidate) {
+        if (!isValidChain(chain, candidate)) return false;
+        //System.out.println("Chain found: " + chain);
+        for (Square square : sudoku.getAllSquares()) {
+            if (square.isSolved()) continue;
+            if (chain.contains(square)) continue;
+            if (SolverUtils.isConnected(square, chain.getFirst()) &&
+                SolverUtils.isConnected(square, chain.getLast())) {
+                //System.out.println("Removing " + candidate + " from " + square);
+                if (square.getCandidates().remove(candidate)) return true;
             }
         }
         return false;
