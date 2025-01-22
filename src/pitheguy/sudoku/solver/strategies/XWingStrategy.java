@@ -5,7 +5,6 @@ import pitheguy.sudoku.gui.Sudoku;
 import pitheguy.sudoku.solver.SolveStrategy;
 import pitheguy.sudoku.solver.SolverUtils;
 import pitheguy.sudoku.util.Pair;
-import pitheguy.sudoku.util.SquareSet;
 
 import java.util.*;
 
@@ -28,7 +27,7 @@ public class XWingStrategy extends SolveStrategy {
             List<Square>[] matchesByIndex = new List[9];
             Arrays.setAll(matchesByIndex, i -> new ArrayList<>());
             for (int index = 0; index < 9; index++) {
-                SquareSet squares = isRow ? sudoku.getRow(index) : sudoku.getColumn(index);
+                List<Square> squares = isRow ? sudoku.getRow(index) : sudoku.getColumn(index);
                 if (SolverUtils.hasDigitSolved(squares, digit)) continue;
                 for (Square square : squares) {
                     if (square.isSolved()) continue;
@@ -47,10 +46,10 @@ public class XWingStrategy extends SolveStrategy {
             for (Pair<Integer> pair : validPairs) {
                 int pos1 = isRow ? matchesByIndex[pair.first()].get(0).getCol() : matchesByIndex[pair.first()].get(0).getRow();
                 int pos2 = isRow ? matchesByIndex[pair.first()].get(1).getCol() : matchesByIndex[pair.first()].get(1).getRow();
-                if (!isSquareValid(isRow, pair.first(), pos1, digit) ||
-                    !isSquareValid(isRow, pair.first(), pos2, digit) ||
-                    !isSquareValid(isRow, pair.second(), pos1, digit) ||
-                    !isSquareValid(isRow, pair.second(), pos2, digit))
+                if (!isSquareValid(sudoku, isRow, pair.first(), pos1, digit) ||
+                    !isSquareValid(sudoku, isRow, pair.first(), pos2, digit) ||
+                    !isSquareValid(sudoku, isRow, pair.second(), pos1, digit) ||
+                    !isSquareValid(sudoku, isRow, pair.second(), pos2, digit))
                     continue;
                 if ((isRow ? matchesByIndex[pair.second()].get(0).getCol() : matchesByIndex[pair.second()].get(0).getRow()) == pos1 ||
                     (isRow ? matchesByIndex[pair.second()].get(1).getCol() : matchesByIndex[pair.second()].get(1).getRow()) == pos2) {
@@ -59,7 +58,7 @@ public class XWingStrategy extends SolveStrategy {
             }
             for (Map.Entry<Pair<Integer>, Pair<Integer>> entry : map.entrySet()) {
                 for (int i : new int[]{entry.getValue().first(), entry.getValue().second()}) {
-                    SquareSet squares = isRow ? sudoku.getColumn(i) : sudoku.getRow(i);
+                    List<Square> squares = isRow ? sudoku.getColumn(i) : sudoku.getRow(i);
                     for (Square square : squares) {
                         int index = isRow ? square.getRow() : square.getCol();
                         if (index == entry.getKey().first() || index == entry.getKey().second()) continue;
@@ -72,12 +71,12 @@ public class XWingStrategy extends SolveStrategy {
         return changed;
     }
 
-    private Square getSquare(boolean isRow, int index, int pos) {
+    private Square getSquare(Sudoku sudoku, boolean isRow, int index, int pos) {
         return isRow ? sudoku.getSquare(index, pos) : sudoku.getSquare(pos, index);
     }
 
-    private boolean isSquareValid(boolean isRow, int index, int pos, int digit) {
-        Square square = getSquare(isRow, index, pos);
+    private boolean isSquareValid(Sudoku sudoku, boolean isRow, int index, int pos, int digit) {
+        Square square = getSquare(sudoku, isRow, index, pos);
         return !square.isSolved() && square.getCandidates().contains(digit);
     }
 }

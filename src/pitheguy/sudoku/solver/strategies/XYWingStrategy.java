@@ -4,7 +4,6 @@ import pitheguy.sudoku.gui.Square;
 import pitheguy.sudoku.gui.Sudoku;
 import pitheguy.sudoku.solver.SolveStrategy;
 import pitheguy.sudoku.solver.SolverUtils;
-import pitheguy.sudoku.util.SquareSet;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,8 +28,8 @@ public class XYWingStrategy extends SolveStrategy {
             List<Integer> candidates = square.getCandidates().getAllCandidates();
             int x = candidates.get(0);
             int y = candidates.get(1);
-            SquareSet containsX = new SquareSet(sudoku);
-            SquareSet containsY = new SquareSet(sudoku);
+            List<Square> containsX = new ArrayList<>();
+            List<Square> containsY = new ArrayList<>();
             for (Square otherSquare : bivalueCells) {
                 if (otherSquare == square) continue;
                 if (!SolverUtils.isConnected(square, otherSquare)) continue;

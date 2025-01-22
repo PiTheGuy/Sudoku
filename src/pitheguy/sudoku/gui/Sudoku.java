@@ -2,7 +2,6 @@ package pitheguy.sudoku.gui;
 
 import pitheguy.sudoku.solver.DigitCandidates;
 import pitheguy.sudoku.solver.SudokuSolver;
-import pitheguy.sudoku.util.SquareSet;
 import pitheguy.sudoku.util.Util;
 
 import javax.swing.*;
@@ -87,22 +86,22 @@ public class Sudoku extends JFrame {
         return true;
     }
 
-    public SquareSet getRow(int row) {
-        SquareSet set = new SquareSet(this);
-        for (int col = 0; col < 9; col++) set.add(row, col);
-        return set;
+    public List<Square> getRow(int row) {
+        List<Square> list = new ArrayList<>(9);
+        for (int col = 0; col < 9; col++) list.add(getSquare(row, col));
+        return list;
     }
 
-    public SquareSet getColumn(int col) {
-        SquareSet set = new SquareSet(this);
-        for (int row = 0; row < 9; row++) set.add(row, col);
-        return set;
+    public List<Square> getColumn(int col) {
+        List<Square> list = new ArrayList<>(9);
+        for (int row = 0; row < 9; row++) list.add(getSquare(row, col));
+        return list;
     }
 
-    public SquareSet getBox(int box) {
-        SquareSet set = new SquareSet(this);
-        for (int cell = 0; cell < 9; cell++) set.add(boxes[box].getSquare(cell));
-        return set;
+    public List<Square> getBox(int box) {
+        List<Square> list = new ArrayList<>(9);
+        for (int cell = 0; cell < 9; cell++) list.add(boxes[box].getSquare(cell));
+        return list;
     }
 
     public List<Square> getAllSquares() {
@@ -113,7 +112,7 @@ public class Sudoku extends JFrame {
         for (int row = 0; row < 9; row++) for (int col = 0; col < 9; col++) action.accept(getSquare(row, col));
     }
 
-    private void checkDuplicates(Function<Integer, SquareSet> groupExtractor) {
+    private void checkDuplicates(Function<Integer, List<Square>> groupExtractor) {
         for (int i = 0; i < 9; i++) {
             Map<String, Square> values = new HashMap<>();
             for (Square square : groupExtractor.apply(i)) {

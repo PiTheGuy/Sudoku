@@ -3,7 +3,6 @@ package pitheguy.sudoku.solver.strategies;
 import pitheguy.sudoku.gui.*;
 import pitheguy.sudoku.solver.DigitCandidates;
 import pitheguy.sudoku.solver.SolveStrategy;
-import pitheguy.sudoku.util.SquareSet;
 
 import java.util.List;
 
@@ -38,7 +37,7 @@ public class PointingPairsAndTriosStrategy extends SolveStrategy {
             } else if (candidates.contains(digit)) return false;
         }
         if (hasDigit) {
-            SquareSet affectedSquares = isRow ? box.getSquare(index, 0).getSurroundingRow() : box.getSquare(0, index).getSurroundingColumn();
+            List<Square> affectedSquares = isRow ? box.getSquare(index, 0).getSurroundingRow() : box.getSquare(0, index).getSurroundingColumn();
             for (Square currentSquare : affectedSquares) {
                 if (currentSquare.isSolved()) continue;
                 if (!squares.contains(currentSquare)) {

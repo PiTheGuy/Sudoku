@@ -107,13 +107,13 @@ public class AlmostLockedSetStrategy extends SolveStrategy {
         return almostLockedSets;
     }
 
-    private void findALSForGroup(List<AlmostLockedSet> almostLockedSets, Function<Integer, SquareSet> groupGetter) {
+    private void findALSForGroup(List<AlmostLockedSet> almostLockedSets, Function<Integer, List<Square>> groupGetter) {
         for (int index = 0; index < 9; index++) {
-            SquareSet squares = groupGetter.apply(index);
+            List<Square> squares = groupGetter.apply(index);
             squares.removeIf(Square::isSolved);
             squares.removeIf(square -> square.getCandidates().count() == 1);
             for (int size = 2; size <= 5; size++)
-                findALSForSize(squares.toList(), size, 0, new ArrayList<>(), DigitCandidates.EMPTY, almostLockedSets);
+                findALSForSize(squares, size, 0, new ArrayList<>(), DigitCandidates.EMPTY, almostLockedSets);
         }
     }
 

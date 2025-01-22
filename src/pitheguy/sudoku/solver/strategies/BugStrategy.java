@@ -4,7 +4,6 @@ import pitheguy.sudoku.gui.Square;
 import pitheguy.sudoku.gui.Sudoku;
 import pitheguy.sudoku.solver.SolveStrategy;
 import pitheguy.sudoku.solver.SolverUtils;
-import pitheguy.sudoku.util.SquareSet;
 
 import java.util.*;
 
@@ -32,7 +31,7 @@ public class BugStrategy extends SolveStrategy {
         return changed;
     }
 
-    private boolean wouldCreateDeadlyCondition(SquareSet squares, int removedDigit) {
+    private boolean wouldCreateDeadlyCondition(List<Square> squares, int removedDigit) {
         Map<Integer, Integer> candidateCounts = new HashMap<>();
         for (Square square : squares) {
             if (square.isSolved()) continue;

@@ -4,7 +4,6 @@ import pitheguy.sudoku.gui.Square;
 import pitheguy.sudoku.gui.Sudoku;
 import pitheguy.sudoku.solver.SolveStrategy;
 import pitheguy.sudoku.solver.SolverUtils;
-import pitheguy.sudoku.util.SquareSet;
 
 import java.util.*;
 
@@ -28,7 +27,7 @@ public class RectangleEliminationStrategy extends SolveStrategy {
 
     private boolean solveImpl(Square square, int digit, boolean isRow) {
         if (square.isSolved()) return false;
-        SquareSet squares = isRow ? square.getSurroundingRow() : square.getSurroundingColumn();
+        List<Square> squares = isRow ? square.getSurroundingRow() : square.getSurroundingColumn();
         if (SolverUtils.hasDigitSolved(squares, digit)) return false;
         Optional<Square> optional = SolverUtils.getOnlySquareThat(squares,
                 s -> s.getCandidates().contains(digit) && s != square,
@@ -45,7 +44,7 @@ public class RectangleEliminationStrategy extends SolveStrategy {
             if (wing2 == square) continue;
             Square forthCorner = isRow ? sudoku.getSquare(wing2.getRow(), wing1.getCol()) : sudoku.getSquare(wing1.getRow(), wing2.getCol());;
             if (forthCorner.getBox() == wing1.getBox() || forthCorner.getBox() == wing2.getBox()) continue;
-            SquareSet box = forthCorner.getSurroundingBox();
+            List<Square> box = forthCorner.getSurroundingBox();
             if (SolverUtils.hasDigitSolved(box, digit)) continue;
             for (Square current : box) {
                 if (current.isSolved()) continue;

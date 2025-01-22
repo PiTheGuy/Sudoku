@@ -3,7 +3,6 @@ package pitheguy.sudoku.solver.strategies;
 import pitheguy.sudoku.gui.Square;
 import pitheguy.sudoku.gui.Sudoku;
 import pitheguy.sudoku.solver.*;
-import pitheguy.sudoku.util.SquareSet;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,8 +32,8 @@ public class XYZWingStrategy extends SolveStrategy {
                 otherCandidates.remove((Integer) z);
                 int x = otherCandidates.get(0);
                 int y = otherCandidates.get(1);
-                SquareSet containsXZ = new SquareSet(sudoku);
-                SquareSet containsYZ = new SquareSet(sudoku);
+                List<Square> containsXZ = new ArrayList<>();
+                List<Square> containsYZ = new ArrayList<>();
                 for (Square wing : bivalueCells) {
                     if (!SolverUtils.isConnected(pivot, wing)) continue;
                     DigitCandidates wingCandidates = wing.getCandidates();

@@ -4,15 +4,12 @@ import pitheguy.sudoku.gui.Square;
 import pitheguy.sudoku.gui.Sudoku;
 import pitheguy.sudoku.solver.DigitCandidates;
 import pitheguy.sudoku.solver.SolveStrategy;
-import pitheguy.sudoku.solver.SolverUtils;
-import pitheguy.sudoku.util.SquareSet;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 public class UniqueRectanglesStrategy extends SolveStrategy {
@@ -90,8 +87,8 @@ public class UniqueRectanglesStrategy extends SolveStrategy {
                 DigitCandidates candidates = rectangle.square3().getCandidates().copy();
                 candidates.removeAll(rectangle.floorCandidates());
                 int extraDigit = candidates.getFirst();
-                SquareSet surroundingUnit = rectangle.isRowWise() ? rectangle.square3().getSurroundingRow() : rectangle.square3().getSurroundingColumn();
-                SquareSet affectedSquares = surroundingUnit.copy();
+                List<Square> surroundingUnit = rectangle.isRowWise() ? rectangle.square3().getSurroundingRow() : rectangle.square3().getSurroundingColumn();
+                Set<Square> affectedSquares = new HashSet<>(surroundingUnit);
                 if (rectangle.square3().getBox() == rectangle.square4().getBox())
                     affectedSquares.addAll(rectangle.square3().getSurroundingBox());
                 affectedSquares.remove(rectangle.square3());
@@ -112,7 +109,7 @@ public class UniqueRectanglesStrategy extends SolveStrategy {
                 DigitCandidates candidates = rectangle.square3().getCandidates().or(rectangle.square4().getCandidates());
                 if (candidates.count() != 4) continue;
                 candidates.removeAll(rectangle.floorCandidates());
-                SquareSet surroundingUnit = rectangle.isRowWise() ? rectangle.square3().getSurroundingRow() : rectangle.square3().getSurroundingColumn();
+                List<Square> surroundingUnit = rectangle.isRowWise() ? rectangle.square3().getSurroundingRow() : rectangle.square3().getSurroundingColumn();
                 Square otherSquare = null;
                 for (Square square : surroundingUnit) {
                     if (square == rectangle.square3() || square == rectangle.square4()) continue;
@@ -142,7 +139,7 @@ public class UniqueRectanglesStrategy extends SolveStrategy {
             for (Rectangle rectangle : rectangles) {
                 List<Integer> candidates = rectangle.floorCandidates().getAllCandidates();
                 for (int digit : candidates) {
-                    SquareSet surroundingUnit = rectangle.isRowWise() ? rectangle.square3().getSurroundingRow() : rectangle.square3().getSurroundingColumn();
+                    List<Square> surroundingUnit = rectangle.isRowWise() ? rectangle.square3().getSurroundingRow() : rectangle.square3().getSurroundingColumn();
                     boolean hasNoDigit = true;
                     for (Square square : surroundingUnit) {
                         if (square.isSolved()) continue;

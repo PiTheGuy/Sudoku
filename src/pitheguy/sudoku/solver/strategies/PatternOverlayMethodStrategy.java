@@ -42,11 +42,11 @@ public class PatternOverlayMethodStrategy extends SolveStrategy {
         return changed;
     }
 
-    private boolean checkGroup(Function<Integer, SquareSet> groupGetter, SquareSet pattern, int digit) {
+    private boolean checkGroup(Function<Integer, List<Square>> groupGetter, SquareSet pattern, int digit) {
         boolean valid = true;
         for (int i = 0; i < 9; i++) {
-            SquareSet squares = groupGetter.apply(i);
-            valid &= SolverUtils.hasDigitSolved(squares, digit) || pattern.containsAny(squares);
+            List<Square> squares = groupGetter.apply(i);
+            valid &= SolverUtils.hasDigitSolved(squares, digit) || pattern.containsAny(new SquareSet(sudoku, squares));
         }
         return valid;
     }
