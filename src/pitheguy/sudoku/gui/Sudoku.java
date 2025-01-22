@@ -89,13 +89,13 @@ public class Sudoku extends JFrame {
 
     public SquareSet getRow(int row) {
         SquareSet set = new SquareSet(this);
-        for (int col = 0; col < 9; col++) set.add(getSquare(row, col));
+        for (int col = 0; col < 9; col++) set.add(row, col);
         return set;
     }
 
     public SquareSet getColumn(int col) {
         SquareSet set = new SquareSet(this);
-        for (int row = 0; row < 9; row++) set.add(getSquare(row, col));
+        for (int row = 0; row < 9; row++) set.add(row, col);
         return set;
     }
 

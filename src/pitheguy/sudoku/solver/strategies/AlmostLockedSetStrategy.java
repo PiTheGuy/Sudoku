@@ -119,6 +119,7 @@ public class AlmostLockedSetStrategy extends SolveStrategy {
 
     private void findALSForSize(List<Square> squares, int size, int start, List<Square> current, DigitCandidates candidates, List<AlmostLockedSet> result) {
         if (size > squares.size()) return;
+        if (start + (size - current.size()) > squares.size()) return;
         if (candidates.count() > size + 1) return;
         if (current.size() == size) {
             if (candidates.count() == size + 1)
