@@ -40,6 +40,7 @@ public class SudokuSolver {
                 new RectangleEliminationStrategy(sudoku),
                 new SwordfishStrategy(sudoku),
                 new XYZWingStrategy(sudoku),
+                new XCyclesStrategy(sudoku),
                 new XYChainsStrategy(sudoku),
                 new JellyfishStrategy(sudoku),
                 new UniqueRectanglesStrategy(sudoku),
