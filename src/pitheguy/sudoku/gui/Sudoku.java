@@ -17,6 +17,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class Sudoku extends JFrame {
+    public static final int BYTES_PER_LINE = 164;
     public final Box[] boxes = new Box[9];
     public String[] board = createEmptyBoard();
     private final Square[] cachedSquares = new Square[81];
@@ -147,26 +148,29 @@ public class Sudoku extends JFrame {
     }
 
     public void loadPuzzle(int puzzleNumber) {
-        int bytesPerLine = 164;
         try {
             RandomAccessFile puzzlesFile = threadLocalFile.get();
-            puzzlesFile.seek((long) (puzzleNumber - 1) * bytesPerLine);
-            String line = puzzlesFile.readLine();
-            if (line == null) throw new IOException("Puzzle not found");
-            String puzzle = line.substring(0, line.indexOf(","));
-            for (int cell = 0; cell < 81; cell++) {
-                String value = String.valueOf(puzzle.charAt(cell));
-                board[cell] = value.equals("0") ? "" : value;
-                Square square = getSquare(cell / 9, cell % 9);
-                square.setGiven(!value.equals("0"));
-                square.invalidateCachedValue();
-            }
-            resetCandidates();
-            repaint();
+            puzzlesFile.seek((long) (puzzleNumber - 1) * BYTES_PER_LINE);
+            String puzzle = puzzlesFile.readLine();
+            if (puzzle == null) throw new IOException("Puzzle not found");
+            loadPuzzle(puzzle);
         } catch (IOException e) {
             System.err.println(e.getMessage());
             JOptionPane.showMessageDialog(this, "Failed to load puzzle", "Error", JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    public void loadPuzzle(String puzzle) {
+        puzzle = puzzle.substring(0, puzzle.indexOf(","));
+        for (int cell = 0; cell < 81; cell++) {
+            String value = String.valueOf(puzzle.charAt(cell));
+            board[cell] = value.equals("0") ? "" : value;
+            Square square = getSquare(cell / 9, cell % 9);
+            square.setGiven(!value.equals("0"));
+            square.invalidateCachedValue();
+        }
+        resetCandidates();
+        repaint();
     }
 
     public void solvePuzzle() {

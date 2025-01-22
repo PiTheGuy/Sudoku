@@ -3,6 +3,11 @@ package pitheguy.sudoku.solver;
 import org.apache.commons.cli.*;
 import pitheguy.sudoku.gui.Sudoku;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -15,7 +20,7 @@ public class SolverChecker {
         CommandLineParser parser = new DefaultParser();
         CommandLine commandLine = parser.parse(createOptions(), args);
         int iterations = Integer.parseInt(commandLine.getOptionValue("iterations", "10000"));
-        int progressUpdateInterval = Integer.parseInt(commandLine.getOptionValue("progressUpdateInterval", "10000"));
+        int progressUpdateInterval = Integer.parseInt(commandLine.getOptionValue("progressUpdateInterval", "50000"));
         boolean showAllPuzzles = commandLine.hasOption("all");
         run(iterations, progressUpdateInterval, showAllPuzzles);
     }
@@ -34,14 +39,20 @@ public class SolverChecker {
         AtomicInteger completed = new AtomicInteger(0);
         Map<Integer, Long> solveTimes = new HashMap<>();
         ThreadLocal<Sudoku> threadLocalSudoku = ThreadLocal.withInitial(() -> new Sudoku(false));
-        if (!threadLocalSudoku.get().isPuzzleLoadingAvailable()) {
-            System.err.println("Failed to load puzzles file.");
+        ByteBuffer buffer = ByteBuffer.allocate(164 * iterations);
+        try (FileChannel fileChannel = new FileInputStream("sudoku.csv").getChannel()) {
+            fileChannel.read(buffer);
+            buffer.flip();
+        } catch (IOException e) {
+            System.err.println("Failed to load puzzles file");
             System.exit(1);
         }
         Runtime.getRuntime().addShutdownHook(new Thread(() -> summarizeProgress(completed.get(), showAllPuzzles, startTime, unsolved, solveTimes)));
         IntStream.range(1, iterations).parallel().forEach(i -> {
             Sudoku sudoku = threadLocalSudoku.get();
-            sudoku.loadPuzzle(i);
+            byte[] bytes = new byte[Sudoku.BYTES_PER_LINE];
+            buffer.get((i - 1) * Sudoku.BYTES_PER_LINE, bytes, 0, Sudoku.BYTES_PER_LINE);
+            sudoku.loadPuzzle(new String(bytes));
             long start = System.currentTimeMillis();
             sudoku.solvePuzzle();
             solveTimes.put(i, System.currentTimeMillis() - start);
@@ -67,12 +78,14 @@ public class SolverChecker {
             if (unsolved.size() > limit) sb.append(", and ").append(unsolved.size() - limit).append(" more...");
             System.out.println(sb);
         }
-        String slowest = new HashMap<>(solveTimes).entrySet().stream()
-                .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
-                .limit(3L)
-                .map(e -> e.getKey() + " (" + e.getValue() + " ms)")
-                .collect(Collectors.joining(", "));
-        System.out.println("Slowest puzzles: " + slowest);
+        if (iterations < 1000000) {
+            String slowest = new HashMap<>(solveTimes).entrySet().stream()
+                    .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
+                    .limit(3L)
+                    .map(e -> e.getKey() + " (" + e.getValue() + " ms)")
+                    .collect(Collectors.joining(", "));
+            System.out.println("Slowest puzzles: " + slowest);
+        }
     }
 
     private static void printProgressIfNeeded(int iterations, int progressUpdateInterval, int completedPuzzles) {

@@ -41,6 +41,10 @@ public class SquareSet implements Iterable<Square> {
         contained.set(square.getRow() * 9 + square.getCol());
     }
 
+    public void add(int row, int col) {
+        contained.set(row * 9 + col);
+    }
+
     public void addAll(SquareSet squareSet) {
         contained.or(squareSet.contained);
     }
