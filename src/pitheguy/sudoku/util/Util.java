@@ -3,7 +3,11 @@ package pitheguy.sudoku.util;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.Transferable;
+import java.awt.datatransfer.UnsupportedFlavorException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,6 +28,16 @@ public class Util {
         Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
         clipboard.setContents(stringSelection, null);
     }
+
+    public static String readFromClipboard() {
+        Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+        try {
+            return (String) clipboard.getData(DataFlavor.stringFlavor);
+        } catch (UnsupportedFlavorException | IOException e) {
+            return null;
+        }
+    }
+
 
     public static <T> List<Pair<T>> getAllPairs(List<T> list) {
         List<Pair<T>> pairs = new ArrayList<>();

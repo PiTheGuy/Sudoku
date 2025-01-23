@@ -160,7 +160,7 @@ public class Sudoku extends JFrame {
     }
 
     public void loadPuzzle(String puzzle) {
-        puzzle = puzzle.substring(0, puzzle.indexOf(","));
+        if (puzzle.contains(",")) puzzle = puzzle.substring(0, puzzle.indexOf(","));
         for (int cell = 0; cell < 81; cell++) {
             String value = String.valueOf(puzzle.charAt(cell));
             board[cell] = value.equals("0") ? "" : value;
@@ -188,13 +188,66 @@ public class Sudoku extends JFrame {
         else candidates.add(digit);
     }
 
-    public void copyBoardToClipboard() {
+    public void copyBoardToClipboard(boolean includeCandidates) {
         StringBuilder sb = new StringBuilder();
         for (int cell = 0; cell < 81; cell++) {
             String value = board[cell];
-            sb.append(value.isEmpty() ? "0" : value);
+            sb.append(value.isEmpty() ? includeCandidates ? cachedSquares[cell].getCandidates() : "0" : value);
         }
         Util.copyToClipboard(sb.toString());
+    }
+
+    public void pasteBoardFromClipboard() {
+        String board = Util.readFromClipboard();
+        if (!validateBoard(board)) {
+            JOptionPane.showMessageDialog(this, "Failed to paste board.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        Arrays.fill(this.board, "");
+        resetCandidates();
+        try {
+            for (int cell = 0; cell < 81; cell++) {
+                Square square = cachedSquares[cell];
+                char c = board.charAt(0);
+                int nextIndex;
+                if (Character.isDigit(c)) {
+                    String value = String.valueOf(c);
+                    this.board[cell] = value.equals("0") ? "" : value;
+                    square.setGiven(!value.equals("0"));
+                    nextIndex = 1;
+                } else if (c == '[') {
+                    int closingBracket = board.indexOf(']');
+                    if (closingBracket == -1) throw new IllegalStateException("Closing bracket not found");
+                    String candidatesString = board.substring(1, closingBracket);
+                    List<Integer> candidates = new ArrayList<>();
+                    for (int i = 0; i < candidatesString.length(); i++) {
+                        char ch = candidatesString.charAt(i);
+                        if (ch < '1' || ch > '9') throw new IllegalStateException("Unexpected character: '" + ch + "'");
+                        candidates.add(ch - '0');
+                    }
+                    short flags = DigitCandidates.getFlags(candidates.stream().mapToInt(Integer::intValue).toArray());
+                    square.getCandidates().setFlags(flags);
+                    square.setGiven(false);
+                    nextIndex = closingBracket + 1;
+                } else throw new IllegalStateException("Unexpected character '" + c + "'");
+                square.invalidateCachedValue();
+                board = board.substring(nextIndex);
+            }
+        } catch (IllegalStateException e) {
+            JOptionPane.showMessageDialog(this, "Failed to paste board.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        repaint();
+    }
+
+    private static boolean validateBoard(String board) {
+        if (board == null) return false;
+        if (board.length() < 81) return false;
+        for (int i = 0; i < board.length(); i++) {
+            char c = board.charAt(i);
+            if (!Character.isDigit(c) && c != '[' && c != ']') return false;
+        }
+        return true;
     }
 
     private class SudokuKeyListener extends KeyAdapter {
@@ -203,7 +256,8 @@ public class Sudoku extends JFrame {
             if (e.getKeyCode() == KeyEvent.VK_F4) openLoadPuzzleDialog();
             if (e.getKeyCode() == KeyEvent.VK_F5) Util.runInBackground(Sudoku.this::solvePuzzle);
             if (e.getKeyCode() == KeyEvent.VK_F6) resetCandidates();
-            if (e.getKeyCode() == KeyEvent.VK_C && e.isControlDown()) copyBoardToClipboard();
+            if (e.getKeyCode() == KeyEvent.VK_C && e.isControlDown()) copyBoardToClipboard(e.isShiftDown());
+            if (e.getKeyCode() == KeyEvent.VK_V && e.isControlDown()) pasteBoardFromClipboard();
             if (selectedCell != -1) {
                 int keyCode = e.getKeyCode();
                 if (keyCode >= KeyEvent.VK_1 && keyCode <= KeyEvent.VK_9) {
