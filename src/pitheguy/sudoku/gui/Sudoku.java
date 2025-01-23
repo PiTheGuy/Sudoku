@@ -74,6 +74,12 @@ public class Sudoku extends JFrame {
         return cachedSquares[row * 9 + col];
     }
 
+    public Square getSquare(String location) {
+        char rowChar = location.charAt(0);
+        char colChar = location.charAt(1);
+        return getSquare(rowChar - 'A', colChar - '1');
+    }
+
     public void checkValidity() {
         forEachSquare(square -> square.setInvalid(false));
         checkDuplicates(this::getRow);
