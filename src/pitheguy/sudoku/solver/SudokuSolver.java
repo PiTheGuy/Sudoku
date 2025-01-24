@@ -46,8 +46,8 @@ public class SudokuSolver {
                 new HiddenUniqueRectanglesStrategy(sudoku),
                 new WXYZWingStrategy(sudoku),
                 new AlignedPairExclusionStrategy(sudoku),
-                new AlternatingInferenceChainsStrategy(sudoku),
                 new AlmostLockedSetStrategy(sudoku),
+                new AlternatingInferenceChainsStrategy(sudoku),
                 new PatternOverlayMethodStrategy(sudoku)
         );
 

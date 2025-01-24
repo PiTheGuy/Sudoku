@@ -12,6 +12,7 @@ import pitheguy.sudoku.util.Util;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -113,8 +114,9 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
 
         cycle.add(candidate);
         for (UniquePair<Square, Integer> link : links) {
-            findCycles(link, cycle.copy(), continuousCycles, discontinuousCycles, !isStrongLink, maxDepth);
+            findCycles(link, cycle, continuousCycles, discontinuousCycles, !isStrongLink, maxDepth);
         }
+        cycle.removeLast();
     }
 
     private Set<UniquePair<Square, Integer>> findStrongLinks(UniquePair<Square, Integer> candidate) {
@@ -193,13 +195,9 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         @Override
         public int hashCode() {
             Cycle copy = copy();
-            copy.sort((u1, u2) -> {
-                int rowCompare = Integer.compare(u1.first().getRow(), u2.first().getRow());
-                if (rowCompare != 0) return rowCompare;
-                int columnCompare = Integer.compare(u1.first().getCol(), u2.first().getCol());
-                if (columnCompare != 0) return columnCompare;
-                return Integer.compare(u1.second(), u2.second());
-            });
+            copy.sort(Comparator.comparingInt((UniquePair<Square, Integer> u) -> u.first().getRow())
+                    .thenComparingInt(u -> u.first().getCol())
+                    .thenComparingInt(UniquePair::second));
             UniquePair<Square, Integer> start = copy.getFirst();
             int startIndex = indexOf(start);
             List<UniquePair<Square, Integer>> normalized = new ArrayList<>(subList(startIndex, size()));

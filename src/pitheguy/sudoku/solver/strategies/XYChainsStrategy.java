@@ -62,9 +62,10 @@ public class XYChainsStrategy extends SolveStrategy {
         if (!chain.getFirst().getCandidates().contains(targetDigit)) return false;
         int target = targetDigit;
         for (Square square : chain) {
-            List<Integer> candidates = square.getCandidates().getAllCandidates();
-            if (!candidates.contains(target)) return false;
-            target = candidates.get(0) == target ? candidates.get(1) : candidates.get(0);
+            if (!square.getCandidates().contains(target)) return false;
+            DigitCandidates candidates = square.getCandidates().copy();
+            candidates.remove(target);
+            target = candidates.getFirst();
         }
         return target == targetDigit;
     }
