@@ -6,6 +6,7 @@ import pitheguy.sudoku.solver.DigitCandidates;
 import pitheguy.sudoku.solver.SolveStrategy;
 import pitheguy.sudoku.solver.SolverUtils;
 import pitheguy.sudoku.util.Pair;
+import pitheguy.sudoku.util.SquareSet;
 import pitheguy.sudoku.util.UniquePair;
 
 import java.util.ArrayList;
@@ -43,16 +44,20 @@ public class AlignedPairExclusionStrategy extends SolveStrategy {
                             candidates.remove(digit1);
                             candidates.remove(digit2);
                         }
-                        for (UniquePair<DigitCandidates, Square> candidateInfo : connectedSquareCandidateInfo) {
-                            DigitCandidates candidates = candidateInfo.first();
-                            Square square = candidateInfo.second();
-                            if (candidates.count() != 1) continue;
-                            for (UniquePair<DigitCandidates, Square> otherCandidateInfo : connectedSquareCandidateInfo) {
-                                if (candidateInfo == otherCandidateInfo) continue;
-                                if (SolverUtils.isConnected(square, otherCandidateInfo.second()))
-                                    otherCandidateInfo.first().remove(candidates.getFirst());
+                        SquareSet processed = new SquareSet(sudoku);
+                        do {
+                            for (UniquePair<DigitCandidates, Square> candidateInfo : connectedSquareCandidateInfo) {
+                                DigitCandidates candidates = candidateInfo.first();
+                                Square square = candidateInfo.second();
+                                if (candidates.count() != 1) continue;
+                                for (UniquePair<DigitCandidates, Square> otherCandidateInfo : connectedSquareCandidateInfo) {
+                                    if (candidateInfo == otherCandidateInfo) continue;
+                                    if (SolverUtils.isConnected(square, otherCandidateInfo.second()))
+                                        otherCandidateInfo.first().remove(candidates.getFirst());
+                                }
+                                processed.add(square);
                             }
-                        }
+                        } while (shouldReprocess(connectedSquareCandidateInfo, processed));
                         boolean valid = connectedSquareCandidates.stream().noneMatch(DigitCandidates::isEmpty);
                         validPairs.put(new Pair<>(digit1, digit2), valid);
                     }
@@ -77,6 +82,14 @@ public class AlignedPairExclusionStrategy extends SolveStrategy {
                 }
 
             }
+        }
+        return false;
+    }
+
+    private static boolean shouldReprocess(List<UniquePair<DigitCandidates, Square>> connectedSquareCandidateInfo, SquareSet processed) {
+        for (UniquePair<DigitCandidates, Square> candidateInfo : connectedSquareCandidateInfo) {
+            if (processed.contains(candidateInfo.second())) continue;
+            if (candidateInfo.first().count() == 1) return true;
         }
         return false;
     }
