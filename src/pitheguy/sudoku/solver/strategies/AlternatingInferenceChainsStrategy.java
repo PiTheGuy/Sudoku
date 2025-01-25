@@ -10,6 +10,7 @@ import pitheguy.sudoku.util.UniquePair;
 import pitheguy.sudoku.util.Util;
 
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -108,7 +109,6 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
                 return;
             } else if (cycle.contains(candidate)) return;
         }
-        //System.out.println(cycle);
         Set<UniquePair<Square, Integer>> links = isStrongLink ? findStrongLinks(candidate) : findWeakLinks(candidate);
         if (links.isEmpty()) return;
 
@@ -123,7 +123,7 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         if (strongLinkCache.containsKey(candidate)) return strongLinkCache.get(candidate);
         Square square = candidate.first();
         int digit = candidate.second();
-        Set<UniquePair<Square, Integer>> links = new HashSet<>();
+        Set<UniquePair<Square, Integer>> links = new LinkedHashSet<>();
         if (square.getCandidates().count() == 2) {
             DigitCandidates candidates = square.getCandidates().copy();
             candidates.remove(digit);
@@ -143,7 +143,7 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         if (weakLinkCache.containsKey(candidate)) return weakLinkCache.get(candidate);
         Square square = candidate.first();
         int digit = candidate.second();
-        Set<UniquePair<Square, Integer>> weakLinks = new HashSet<>();
+        Set<UniquePair<Square, Integer>> weakLinks = new LinkedHashSet<>();
         if (square.getCandidates().count() > 1)
             for (int c : square.getCandidates().getAllCandidates())
                 if (c != digit) weakLinks.add(new UniquePair<>(square, c));
@@ -163,15 +163,61 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
     }
 
     private static class Cycle extends ArrayList<UniquePair<Square, Integer>> {
+        public static final Comparator<UniquePair<Square, Integer>> NODE_COMPARATOR = Comparator.comparingInt((UniquePair<Square, Integer> u) -> u.first().getRow())
+                .thenComparingInt(u -> u.first().getCol())
+                .thenComparingInt(UniquePair::second);
         private final boolean firstLinkStrong;
+        private final NodeSet containedNodes = new NodeSet();
 
         public Cycle(boolean firstLinkStrong) {
             this.firstLinkStrong = firstLinkStrong;
         }
 
-        public Cycle(Collection<UniquePair<Square, Integer>> squares, boolean firstLinkStrong) {
+        public Cycle(Collection<UniquePair<Square, Integer>> squares, boolean firstLinkStrong, NodeSet containedNodes) {
             super(squares);
             this.firstLinkStrong = firstLinkStrong;
+            this.containedNodes.addAll(containedNodes);
+        }
+
+        @Override
+        public boolean add(UniquePair<Square, Integer> node) {
+            boolean added = super.add(node);
+            if (added) containedNodes.add(node);
+            return added;
+        }
+
+        @Override
+        public boolean addAll(Collection<? extends UniquePair<Square, Integer>> c) {
+            boolean modified = super.addAll(c);
+            if (modified) c.forEach(containedNodes::add);
+            return modified;
+        }
+
+        @Override
+        public boolean remove(Object o) {
+            int index = indexOf(o);
+            if (index != -1) remove(index);
+            return index != -1;
+        }
+
+        @Override
+        public boolean removeAll(Collection<?> c) {
+            boolean modified = false;
+            for (Object o : c) modified |= remove(o);
+            return modified;
+        }
+
+        @Override
+        public UniquePair<Square, Integer> remove(int index) {
+            UniquePair<Square, Integer> removed = super.remove(index);
+            containedNodes.remove(removed);
+            return removed;
+        }
+
+        @Override
+        public boolean contains(Object o) {
+            if (o instanceof UniquePair<?, ?> node) return containedNodes.contains((UniquePair<Square, Integer>) node);
+            else return false;
         }
 
         public List<Integer> getContainedDigits() {
@@ -194,11 +240,8 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
 
         @Override
         public int hashCode() {
-            Cycle copy = copy();
-            copy.sort(Comparator.comparingInt((UniquePair<Square, Integer> u) -> u.first().getRow())
-                    .thenComparingInt(u -> u.first().getCol())
-                    .thenComparingInt(UniquePair::second));
-            UniquePair<Square, Integer> start = copy.getFirst();
+            if (isEmpty()) return 0;
+            UniquePair<Square, Integer> start = stream().min(NODE_COMPARATOR).orElseThrow();
             int startIndex = indexOf(start);
             List<UniquePair<Square, Integer>> normalized = new ArrayList<>(subList(startIndex, size()));
             if (startIndex != 0) normalized.addAll(subList(0, startIndex));
@@ -206,7 +249,34 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         }
 
         public Cycle copy() {
-            return new Cycle(this, firstLinkStrong);
+            return new Cycle(this, firstLinkStrong, containedNodes);
+        }
+    }
+
+    private static class NodeSet {
+        private final BitSet containedNodes = new BitSet();
+
+        public void add(UniquePair<Square, Integer> node) {
+            containedNodes.set(getNodeIndex(node));
+        }
+
+        public void addAll(NodeSet nodes) {
+            containedNodes.or(nodes.containedNodes);
+        }
+
+        public void remove(UniquePair<Square, Integer> node) {
+            containedNodes.clear(getNodeIndex(node));
+        }
+
+        public boolean contains(UniquePair<Square, Integer> node) {
+            return containedNodes.get(getNodeIndex(node));
+        }
+
+        private static int getNodeIndex(UniquePair<Square, Integer> node) {
+            Square square = node.first();
+            int digit = node.second();
+            int squareId = square.getRow() * 9 + square.getCol();
+            return squareId * 9 + (digit - 1);
         }
     }
 }
