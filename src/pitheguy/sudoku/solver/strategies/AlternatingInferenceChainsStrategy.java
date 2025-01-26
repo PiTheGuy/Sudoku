@@ -3,10 +3,11 @@ package pitheguy.sudoku.solver.strategies;
 import pitheguy.sudoku.gui.Square;
 import pitheguy.sudoku.gui.Sudoku;
 import pitheguy.sudoku.solver.DigitCandidates;
+import pitheguy.sudoku.solver.GroupType;
 import pitheguy.sudoku.solver.SolveStrategy;
 import pitheguy.sudoku.solver.SolverUtils;
+import pitheguy.sudoku.util.ListComparator;
 import pitheguy.sudoku.util.Pair;
-import pitheguy.sudoku.util.UniquePair;
 import pitheguy.sudoku.util.Util;
 
 import java.util.ArrayList;
@@ -20,8 +21,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class AlternatingInferenceChainsStrategy extends SolveStrategy {
+    private static final List<Pair<Integer>> GROUP_ELIGIBLE_INDEX_PAIRS = Util.getAllPairs(IntStream.range(0, 9).boxed().toList()).stream()
+            .filter(pair -> pair.first() / 3 == pair.second() / 3).toList();
+    private static final List<List<Integer>> GROUP_ELIGIBLE_INDEX_TRIPLETS = List.of(List.of(0, 1, 2), List.of(3, 4, 5), List.of(6, 7, 8));
     private final Map<Node, Set<Node>> strongLinkCache = new HashMap<>();
     private final Map<Node, Set<Node>> weakLinkCache = new HashMap<>();
 
@@ -51,14 +58,17 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         cycles:
         for (Cycle cycle : continuousCycles) {
             for (Node node : cycle)
-                if (!node.square().getCandidates().contains(node.digit())) continue cycles;
+                if (!node.squares().stream().allMatch(s -> s.getCandidates().contains(node.digit()))) continue cycles;
+            //System.out.println("Cycle found: " + cycle);
             for (int i = 0; i < cycle.size() - 1; i++) {
-                if (cycle.get(i).square() == cycle.get(i + 1).square()) {
+                if (cycle.get(i).getConnectionType() == Node.ConnectionType.SINGLE &&
+                    cycle.get(i + 1).getConnectionType() == Node.ConnectionType.SINGLE &&
+                    cycle.get(i).squares().getFirst() == cycle.get(i + 1).squares().getFirst()) {
                     short flags = DigitCandidates.getFlags(cycle.get(i).digit(), cycle.get(i + 1).digit());
-                    changed |= cycle.get(i).square().getCandidates().setFlags(flags);
+                    //System.out.println("Removing all but " + cycle.get(i).digit + " and " + cycle.get(i + 1).digit + " from " + cycle.get(i).squares().getFirst());
+                    changed |= cycle.get(i).squares().getFirst().getCandidates().setFlags(flags);
                 }
             }
-            //System.out.println("Cycle found: " + cycle);
             for (int digit : cycle.getContainedDigits()) {
                 for (Square square : sudoku.getAllSquares()) {
                     Node node = new Node(square, digit);
@@ -67,8 +77,8 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
                     if (!square.getCandidates().contains(digit)) continue;
                     List<Node> visibleNodes = new ArrayList<>();
                     for (Node current : cycle)
-                        if (current.digit() == digit && SolverUtils.isConnected(square, current.square()))
-                            visibleNodes.add(current);
+                        if (current.digit() == digit && current.getConnectionType() == Node.ConnectionType.SINGLE &&
+                            SolverUtils.isConnected(square, current.squares().getFirst())) visibleNodes.add(current);
                     if (visibleNodes.size() < 2) continue;
                     boolean valid = false;
                     for (Pair<Node> nodePair : Util.getAllPairs(visibleNodes)) {
@@ -87,10 +97,13 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         }
         cycles:
         for (Cycle cycle : discontinuousCycles) {
+            //System.out.println("Discontinuous cycle: " + cycle);
             for (Node node : cycle)
-                if (!node.square().getCandidates().contains(node.digit())) continue cycles;
-            Square square = cycle.getFirst().square();
+                if (!node.squares().stream().allMatch(s -> s.getCandidates().contains(node.digit()))) continue cycles;
+            if (cycle.getFirst().getConnectionType() != Node.ConnectionType.SINGLE) continue;
+            Square square = cycle.getFirst().squares().getFirst();
             int digit = cycle.getFirst().digit();
+            //System.out.println((cycle.isFirstLinkStrong() ? "Keeping " : "Removing " ) + digit + " on " + square);
             if (cycle.isFirstLinkStrong()) changed |= square.getCandidates().setFlags(DigitCandidates.getFlags(digit));
             else changed |= square.getCandidates().remove(digit);
         }
@@ -113,79 +126,145 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
 
         cycle.add(node);
         for (Node link : links) {
+            if (!validNextNode(cycle, node)) continue;
             findCycles(link, cycle, continuousCycles, discontinuousCycles, !isStrongLink, maxDepth);
         }
         cycle.removeLast();
     }
 
+    private boolean validNextNode(Cycle cycle, Node node) {
+        if (node.getConnectionType() == Node.ConnectionType.SINGLE) {
+            for (int i = 0; i < cycle.size() - 1; i++) {
+                Node cycleNode = cycle.get(i);
+                if (cycleNode.digit() == node.digit() && cycleNode.squares().contains(node.squares().getFirst()))
+                    return false;
+            }
+            return true;
+        }
+        for (Square square : node.squares()) if (cycle.contains(new Node(square, node.digit()))) return false;
+        return true;
+    }
+
     private Set<Node> findStrongLinks(Node node) {
         if (strongLinkCache.containsKey(node)) return strongLinkCache.get(node);
-        Square square = node.square();
+        List<Square> squares = node.squares();
         int digit = node.digit();
         Set<Node> links = new LinkedHashSet<>();
-        if (square.getCandidates().count() == 2) {
-            DigitCandidates candidates = square.getCandidates().copy();
+        if (node.getConnectionType() == Node.ConnectionType.SINGLE && squares.getFirst().getCandidates().count() == 2) {
+            DigitCandidates candidates = squares.getFirst().getCandidates().copy();
             candidates.remove(digit);
             int newDigit = candidates.getFirst();
-            links.add(new Node(square, newDigit));
+            links.add(new Node(squares, newDigit));
         }
-        List<Optional<Square>> externalLinks = new ArrayList<>();
-        externalLinks.add(SolverUtils.getOnlySquareThat(square.getSurroundingRow(), s -> s != square && s.getCandidates().contains(digit), true));
-        externalLinks.add(SolverUtils.getOnlySquareThat(square.getSurroundingColumn(), s -> s != square && s.getCandidates().contains(digit), true));
-        externalLinks.add(SolverUtils.getOnlySquareThat(square.getSurroundingBox(), s -> s != square && s.getCandidates().contains(digit), true));
-        links.addAll(externalLinks.stream().filter(Optional::isPresent).map(s -> new Node(s.get(), digit)).toList());
+        List<Optional<Node>> externalLinks = new ArrayList<>();
+
+        if (node.getConnectionType() != Node.ConnectionType.COLUMN)
+            externalLinks.add(findStrongLinksForGroup(node, squares.getFirst().getSurroundingRow(), digit, GroupType.ROW));
+        if (node.getConnectionType() != Node.ConnectionType.ROW)
+            externalLinks.add(findStrongLinksForGroup(node, squares.getFirst().getSurroundingColumn(), digit, GroupType.COLUMN));
+        externalLinks.add(findStrongLinksForGroup(node, squares.getFirst().getSurroundingBox(), digit, GroupType.BOX));
+        links.addAll(externalLinks.stream().filter(Optional::isPresent).map(Optional::get).toList());
         strongLinkCache.put(node, links);
         return links;
     }
 
+    private Optional<Node> findStrongLinksForGroup(Node node, List<Square> group, int digit, GroupType groupType) {
+        Square square = node.squares().getFirst();
+        List<Square> containedSquares = new ArrayList<>();
+        for (Square groupSquare : group) {
+            if (groupSquare == square) continue;
+            if (groupSquare.isSolved()) continue;
+            if (groupSquare.getCandidates().contains(digit)) containedSquares.add(groupSquare);
+        }
+        if (containedSquares.isEmpty()) return Optional.empty();
+        else if (containedSquares.size() == 1) return Optional.of(new Node(containedSquares.getFirst(), digit));
+        else if (containedSquares.size() == 2) {
+            if (groupType == GroupType.BOX) return Optional.empty();
+            if (containedSquares.get(0).getBox() != containedSquares.get(1).getBox()) return Optional.empty();
+            Function<Square, Integer> indexExtractor = groupType == GroupType.ROW ? Square::getRow : Square::getCol;
+            if (indexExtractor.apply(square).equals(indexExtractor.apply(containedSquares.getFirst())) ||
+                square.getBox() == containedSquares.getFirst().getBox()) {
+                return Optional.of(new Node(containedSquares, digit));
+            }
+        } else if (containedSquares.size() == 3) {
+            if (groupType == GroupType.BOX) return Optional.empty();
+            if (containedSquares.get(0).getBox() != containedSquares.get(1).getBox() ||
+                containedSquares.get(1).getBox() != containedSquares.get(2).getBox()) return Optional.empty();
+            Function<Square, Integer> indexExtractor = groupType == GroupType.ROW ? Square::getRow : Square::getCol;
+            if (indexExtractor.apply(square).equals(indexExtractor.apply(containedSquares.getFirst())) ||
+                square.getBox() == containedSquares.getFirst().getBox()) {
+                return Optional.of(new Node(containedSquares, digit));
+            }
+        }
+        return Optional.empty();
+    }
+
     private Set<Node> findWeakLinks(Node node) {
         if (weakLinkCache.containsKey(node)) return weakLinkCache.get(node);
-        Square square = node.square();
+        List<Square> squares = node.squares();
         int digit = node.digit();
         Set<Node> weakLinks = new LinkedHashSet<>();
-        if (square.getCandidates().count() > 1)
+        if (node.getConnectionType() == Node.ConnectionType.SINGLE && squares.getFirst().getCandidates().count() > 1) {
+            Square square = squares.getFirst();
             for (int c : square.getCandidates().getAllCandidates())
                 if (c != digit) weakLinks.add(new Node(square, c));
-        weakLinks.addAll(findWeakLinksForGroup(square.getSurroundingRow(), digit));
-        weakLinks.addAll(findWeakLinksForGroup(square.getSurroundingColumn(), digit));
-        weakLinks.addAll(findWeakLinksForGroup(square.getSurroundingBox(), digit));
+        }
+        if (node.getConnectionType() != Node.ConnectionType.COLUMN)
+            weakLinks.addAll(findWeakLinksForGroup(squares.getFirst().getSurroundingRow(), digit, GroupType.ROW));
+        if (node.getConnectionType() != Node.ConnectionType.ROW)
+            weakLinks.addAll(findWeakLinksForGroup(squares.getFirst().getSurroundingColumn(), digit, GroupType.COLUMN));
+        weakLinks.addAll(findWeakLinksForGroup(squares.getFirst().getSurroundingBox(), digit, GroupType.BOX));
         weakLinkCache.put(node, weakLinks);
         return weakLinks;
     }
 
-    private List<Node> findWeakLinksForGroup(List<Square> group, int digit) {
+    private List<Node> findWeakLinksForGroup(List<Square> group, int digit, GroupType groupType) {
         if (SolverUtils.hasDigitSolved(group, digit)) return Collections.emptyList();
-        return group.stream()
-                .filter(s -> !s.isSolved() && s.getCandidates().contains(digit))
-                .map(s -> new Node(s, digit))
-                .toList();
+        List<Node> links = group.stream().filter(s -> !s.isSolved() && s.getCandidates().contains(digit))
+                .map(s -> new Node(s, digit)).collect(Collectors.toList());
+        if (groupType == GroupType.BOX) return links;
+        for (Pair<Integer> pair : GROUP_ELIGIBLE_INDEX_PAIRS) {
+            Pair<Square> squarePair = pair.map(group::get);
+            if (squarePair.first().isSolved() || squarePair.second().isSolved()) continue;
+            if (squarePair.first().getCandidates().contains(digit) &&
+                squarePair.second().getCandidates().contains(digit)) {
+                links.add(new Node(squarePair.asList(), digit));
+            }
+        }
+        for (List<Integer> triplet : GROUP_ELIGIBLE_INDEX_TRIPLETS) {
+            List<Square> squares = triplet.stream().map(group::get).toList();
+            if (squares.stream().anyMatch(Square::isSolved)) continue;
+            if (squares.stream().allMatch(s -> s.getCandidates().contains(digit)))
+                links.add(new Node(squares, digit));
+        }
+        return links;
     }
 
     private static class Cycle extends ArrayList<Node> {
         private final boolean firstLinkStrong;
-        private final NodeSet containedNodes = new NodeSet();
+        private final NodeSet containedSingleNodes = new NodeSet();
 
         public Cycle(boolean firstLinkStrong) {
             this.firstLinkStrong = firstLinkStrong;
         }
 
-        public Cycle(Collection<Node> nodes, boolean firstLinkStrong, NodeSet containedNodes) {
+        public Cycle(Collection<Node> nodes, boolean firstLinkStrong, NodeSet containedSingleNodes) {
             super(nodes);
             this.firstLinkStrong = firstLinkStrong;
-            this.containedNodes.addAll(containedNodes);
+            this.containedSingleNodes.addAll(containedSingleNodes);
         }
 
         @Override
         public boolean add(Node node) {
             boolean added = super.add(node);
-            if (added) containedNodes.add(node);
+            if (added && node.getConnectionType() == Node.ConnectionType.SINGLE) containedSingleNodes.add(node);
             return added;
         }
 
         @Override
         public boolean addAll(Collection<? extends Node> c) {
             boolean modified = super.addAll(c);
-            if (modified) c.forEach(containedNodes::add);
+            if (modified) c.stream().filter(node -> node.getConnectionType() == Node.ConnectionType.SINGLE).forEach(containedSingleNodes::add);
             return modified;
         }
 
@@ -206,14 +285,22 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         @Override
         public Node remove(int index) {
             Node removed = super.remove(index);
-            containedNodes.remove(removed);
+            if (removed.getConnectionType() == Node.ConnectionType.SINGLE)
+                containedSingleNodes.remove(removed);
             return removed;
         }
 
         @Override
+        public Node removeLast() {
+            return remove(size() - 1);
+        }
+
+        @Override
         public boolean contains(Object o) {
-            if (o instanceof Node node) return containedNodes.contains(node);
-            else return false;
+            if (o instanceof Node node) {
+                if (node.getConnectionType() == Node.ConnectionType.SINGLE) return containedSingleNodes.contains(node);
+                else return super.contains(o);
+            } else return false;
         }
 
         public List<Integer> getContainedDigits() {
@@ -237,7 +324,7 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         @Override
         public int hashCode() {
             if (isEmpty()) return 0;
-            Node start = stream().min(Node.COMPARATOR).orElseThrow();
+            Node start = stream().min(Comparator.naturalOrder()).orElseThrow();
             int startIndex = indexOf(start);
             List<Node> normalized = new ArrayList<>(subList(startIndex, size()));
             if (startIndex != 0) normalized.addAll(subList(0, startIndex));
@@ -245,20 +332,42 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         }
 
         public Cycle copy() {
-            return new Cycle(this, firstLinkStrong, containedNodes);
+            return new Cycle(this, firstLinkStrong, containedSingleNodes);
         }
     }
 
-    private record Node(Square square, int digit) {
-        public static final Comparator<Node> COMPARATOR = Comparator.comparingInt((Node node) -> node.square().getRow())
-                .thenComparingInt(node -> node.square().getCol())
-                .thenComparingInt(Node::digit);
+    private record Node(List<Square> squares, int digit) implements Comparable<Node> {
+        public Node(Square square, int digit) {
+            this(List.of(square), digit);
+        }
+
+        @Override
+        public int compareTo(Node o) {
+            if (o == null) return 1;
+            int squaresCompare = new ListComparator<Square>().compare(squares, o.squares);
+            if (squaresCompare != 0) return squaresCompare;
+            return digit - o.digit;
+        }
+
+        public ConnectionType getConnectionType() {
+            if (squares.size() == 1) return ConnectionType.SINGLE;
+            if (squares.stream().allMatch(square -> square.getRow() == squares.getFirst().getRow())) return ConnectionType.ROW;
+            if (squares.stream().allMatch(square -> square.getCol() == squares.getFirst().getCol())) return ConnectionType.COLUMN;
+            throw new IllegalStateException("Squares in node are not connected");
+        }
+
+        public enum ConnectionType {
+            SINGLE,
+            ROW,
+            COLUMN
+        }
     }
 
     private static class NodeSet {
         private final BitSet containedNodes = new BitSet();
 
         public void add(Node node) {
+            if (node.getConnectionType() != Node.ConnectionType.SINGLE) throw new IllegalArgumentException("Only single nodes are allowed");
             containedNodes.set(getNodeIndex(node));
         }
 
@@ -267,15 +376,16 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         }
 
         public void remove(Node node) {
-            containedNodes.clear(getNodeIndex(node));
+            if (node.getConnectionType() == Node.ConnectionType.SINGLE) containedNodes.clear(getNodeIndex(node));
         }
 
         public boolean contains(Node node) {
-            return containedNodes.get(getNodeIndex(node));
+            if (node.getConnectionType() == Node.ConnectionType.SINGLE) return containedNodes.get(getNodeIndex(node));
+            else return false;
         }
 
         private static int getNodeIndex(Node node) {
-            Square square = node.square();
+            Square square = node.squares().getFirst();
             int digit = node.digit();
             int squareId = square.getRow() * 9 + square.getCol();
             return squareId * 9 + (digit - 1);

@@ -6,9 +6,10 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.Comparator;
 import java.util.List;
 
-public class Square extends JPanel {
+public class Square extends JPanel implements Comparable<Square> {
     private final Sudoku sudoku;
     private final DigitCandidates candidates = new DigitCandidates();
     private final int row;
@@ -84,6 +85,10 @@ public class Square extends JPanel {
         return (row / 3) * 3 + (col / 3);
     }
 
+    public int getIndex() {
+        return row * 9 + col;
+    }
+
     public List<Square> getSurroundingRow() {
         return sudoku.getRow(row);
     }
@@ -152,5 +157,10 @@ public class Square extends JPanel {
         if (invalid) return Color.RED;
         if (given) return Color.BLACK;
         else return Color.GRAY;
+    }
+
+    @Override
+    public int compareTo(Square o) {
+        return Integer.compare(getIndex(), o.getIndex());
     }
 }
