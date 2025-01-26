@@ -15,7 +15,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -23,8 +22,8 @@ import java.util.Optional;
 import java.util.Set;
 
 public class AlternatingInferenceChainsStrategy extends SolveStrategy {
-    private final Map<UniquePair<Square, Integer>, Set<UniquePair<Square, Integer>>> strongLinkCache = new HashMap<>();
-    private final Map<UniquePair<Square, Integer>, Set<UniquePair<Square, Integer>>> weakLinkCache = new HashMap<>();
+    private final Map<Node, Set<Node>> strongLinkCache = new HashMap<>();
+    private final Map<Node, Set<Node>> weakLinkCache = new HashMap<>();
 
     public AlternatingInferenceChainsStrategy(Sudoku sudoku) {
         super(sudoku);
@@ -45,34 +44,34 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         for (Square square : sudoku.getAllSquares()) {
             if (square.isSolved()) continue;
             for (int digit : square.getCandidates().getAllCandidates()) {
-                findCycles(new UniquePair<>(square, digit), new Cycle(true), continuousCycles, discontinuousCycles, true, maxDepth);
-                findCycles(new UniquePair<>(square, digit), new Cycle(false), continuousCycles, discontinuousCycles, false, maxDepth);
+                findCycles(new Node(square, digit), new Cycle(true), continuousCycles, discontinuousCycles, true, maxDepth);
+                findCycles(new Node(square, digit), new Cycle(false), continuousCycles, discontinuousCycles, false, maxDepth);
             }
         }
         cycles:
         for (Cycle cycle : continuousCycles) {
-            for (UniquePair<Square, Integer> node : cycle)
-                if (!node.first().getCandidates().contains(node.second())) continue cycles;
+            for (Node node : cycle)
+                if (!node.square().getCandidates().contains(node.digit())) continue cycles;
             for (int i = 0; i < cycle.size() - 1; i++) {
-                if (cycle.get(i).first() == cycle.get(i + 1).first()) {
-                    short flags = DigitCandidates.getFlags(cycle.get(i).second(), cycle.get(i + 1).second());
-                    changed |= cycle.get(i).first().getCandidates().setFlags(flags);
+                if (cycle.get(i).square() == cycle.get(i + 1).square()) {
+                    short flags = DigitCandidates.getFlags(cycle.get(i).digit(), cycle.get(i + 1).digit());
+                    changed |= cycle.get(i).square().getCandidates().setFlags(flags);
                 }
             }
             //System.out.println("Cycle found: " + cycle);
             for (int digit : cycle.getContainedDigits()) {
                 for (Square square : sudoku.getAllSquares()) {
-                    UniquePair<Square, Integer> pair = new UniquePair<>(square, digit);
+                    Node node = new Node(square, digit);
                     if (square.isSolved()) continue;
-                    if (cycle.contains(pair)) continue;
+                    if (cycle.contains(node)) continue;
                     if (!square.getCandidates().contains(digit)) continue;
-                    List<UniquePair<Square, Integer>> visibleNodes = new ArrayList<>();
-                    for (UniquePair<Square, Integer> current : cycle)
-                        if (current.second() == digit && SolverUtils.isConnected(square, current.first()))
+                    List<Node> visibleNodes = new ArrayList<>();
+                    for (Node current : cycle)
+                        if (current.digit() == digit && SolverUtils.isConnected(square, current.square()))
                             visibleNodes.add(current);
                     if (visibleNodes.size() < 2) continue;
                     boolean valid = false;
-                    for (Pair<UniquePair<Square, Integer>> nodePair : Util.getAllPairs(visibleNodes)) {
+                    for (Pair<Node> nodePair : Util.getAllPairs(visibleNodes)) {
                         int index1 = cycle.indexOf(nodePair.first());
                         int index2 = cycle.indexOf(nodePair.second());
                         if (index1 % 2 != index2 % 2) {
@@ -88,84 +87,81 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         }
         cycles:
         for (Cycle cycle : discontinuousCycles) {
-            for (UniquePair<Square, Integer> node : cycle)
-                if (!node.first().getCandidates().contains(node.second())) continue cycles;
-            Square square = cycle.getFirst().first();
-            int digit = cycle.getFirst().second();
+            for (Node node : cycle)
+                if (!node.square().getCandidates().contains(node.digit())) continue cycles;
+            Square square = cycle.getFirst().square();
+            int digit = cycle.getFirst().digit();
             if (cycle.isFirstLinkStrong()) changed |= square.getCandidates().setFlags(DigitCandidates.getFlags(digit));
             else changed |= square.getCandidates().remove(digit);
         }
         return changed;
     }
 
-    private void findCycles(UniquePair<Square, Integer> candidate, Cycle cycle, Set<Cycle> continuousCycles, Set<Cycle> discontinuousCycles, boolean isStrongLink, int maxDepth) {
+    private void findCycles(Node node, Cycle cycle, Set<Cycle> continuousCycles, Set<Cycle> discontinuousCycles, boolean isStrongLink, int maxDepth) {
         if (cycle.size() > maxDepth) return;
         if (!cycle.isEmpty()) {
-            if (cycle.getFirst().equals(candidate)) {
+            if (cycle.getFirst().equals(node)) {
                 if (cycle.size() > 2) {
                     if (cycle.size() % 2 == 0) continuousCycles.add(cycle.copy());
                     else discontinuousCycles.add(cycle.copy());
                 }
                 return;
-            } else if (cycle.contains(candidate)) return;
+            } else if (cycle.contains(node)) return;
         }
-        Set<UniquePair<Square, Integer>> links = isStrongLink ? findStrongLinks(candidate) : findWeakLinks(candidate);
+        Set<Node> links = isStrongLink ? findStrongLinks(node) : findWeakLinks(node);
         if (links.isEmpty()) return;
 
-        cycle.add(candidate);
-        for (UniquePair<Square, Integer> link : links) {
+        cycle.add(node);
+        for (Node link : links) {
             findCycles(link, cycle, continuousCycles, discontinuousCycles, !isStrongLink, maxDepth);
         }
         cycle.removeLast();
     }
 
-    private Set<UniquePair<Square, Integer>> findStrongLinks(UniquePair<Square, Integer> candidate) {
-        if (strongLinkCache.containsKey(candidate)) return strongLinkCache.get(candidate);
-        Square square = candidate.first();
-        int digit = candidate.second();
-        Set<UniquePair<Square, Integer>> links = new LinkedHashSet<>();
+    private Set<Node> findStrongLinks(Node node) {
+        if (strongLinkCache.containsKey(node)) return strongLinkCache.get(node);
+        Square square = node.square();
+        int digit = node.digit();
+        Set<Node> links = new LinkedHashSet<>();
         if (square.getCandidates().count() == 2) {
             DigitCandidates candidates = square.getCandidates().copy();
             candidates.remove(digit);
             int newDigit = candidates.getFirst();
-            links.add(new UniquePair<>(square, newDigit));
+            links.add(new Node(square, newDigit));
         }
         List<Optional<Square>> externalLinks = new ArrayList<>();
         externalLinks.add(SolverUtils.getOnlySquareThat(square.getSurroundingRow(), s -> s != square && s.getCandidates().contains(digit), true));
         externalLinks.add(SolverUtils.getOnlySquareThat(square.getSurroundingColumn(), s -> s != square && s.getCandidates().contains(digit), true));
         externalLinks.add(SolverUtils.getOnlySquareThat(square.getSurroundingBox(), s -> s != square && s.getCandidates().contains(digit), true));
-        links.addAll(externalLinks.stream().filter(Optional::isPresent).map(s -> new UniquePair<>(s.get(), digit)).toList());
-        strongLinkCache.put(candidate, links);
+        links.addAll(externalLinks.stream().filter(Optional::isPresent).map(s -> new Node(s.get(), digit)).toList());
+        strongLinkCache.put(node, links);
         return links;
     }
 
-    private Set<UniquePair<Square, Integer>> findWeakLinks(UniquePair<Square, Integer> candidate) {
-        if (weakLinkCache.containsKey(candidate)) return weakLinkCache.get(candidate);
-        Square square = candidate.first();
-        int digit = candidate.second();
-        Set<UniquePair<Square, Integer>> weakLinks = new LinkedHashSet<>();
+    private Set<Node> findWeakLinks(Node node) {
+        if (weakLinkCache.containsKey(node)) return weakLinkCache.get(node);
+        Square square = node.square();
+        int digit = node.digit();
+        Set<Node> weakLinks = new LinkedHashSet<>();
         if (square.getCandidates().count() > 1)
             for (int c : square.getCandidates().getAllCandidates())
-                if (c != digit) weakLinks.add(new UniquePair<>(square, c));
+                if (c != digit) weakLinks.add(new Node(square, c));
         weakLinks.addAll(findWeakLinksForGroup(square.getSurroundingRow(), digit));
         weakLinks.addAll(findWeakLinksForGroup(square.getSurroundingColumn(), digit));
         weakLinks.addAll(findWeakLinksForGroup(square.getSurroundingBox(), digit));
-        weakLinkCache.put(candidate, weakLinks);
+        weakLinkCache.put(node, weakLinks);
         return weakLinks;
     }
 
-    private List<UniquePair<Square, Integer>> findWeakLinksForGroup(List<Square> group, int digit) {
+    private List<Node> findWeakLinksForGroup(List<Square> group, int digit) {
         if (SolverUtils.hasDigitSolved(group, digit)) return Collections.emptyList();
         return group.stream()
                 .filter(s -> !s.isSolved() && s.getCandidates().contains(digit))
-                .map(s -> new UniquePair<>(s, digit))
+                .map(s -> new Node(s, digit))
                 .toList();
     }
 
-    private static class Cycle extends ArrayList<UniquePair<Square, Integer>> {
-        public static final Comparator<UniquePair<Square, Integer>> NODE_COMPARATOR = Comparator.comparingInt((UniquePair<Square, Integer> u) -> u.first().getRow())
-                .thenComparingInt(u -> u.first().getCol())
-                .thenComparingInt(UniquePair::second);
+    private static class Cycle extends ArrayList<Node> {
         private final boolean firstLinkStrong;
         private final NodeSet containedNodes = new NodeSet();
 
@@ -173,21 +169,21 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
             this.firstLinkStrong = firstLinkStrong;
         }
 
-        public Cycle(Collection<UniquePair<Square, Integer>> squares, boolean firstLinkStrong, NodeSet containedNodes) {
-            super(squares);
+        public Cycle(Collection<Node> nodes, boolean firstLinkStrong, NodeSet containedNodes) {
+            super(nodes);
             this.firstLinkStrong = firstLinkStrong;
             this.containedNodes.addAll(containedNodes);
         }
 
         @Override
-        public boolean add(UniquePair<Square, Integer> node) {
+        public boolean add(Node node) {
             boolean added = super.add(node);
             if (added) containedNodes.add(node);
             return added;
         }
 
         @Override
-        public boolean addAll(Collection<? extends UniquePair<Square, Integer>> c) {
+        public boolean addAll(Collection<? extends Node> c) {
             boolean modified = super.addAll(c);
             if (modified) c.forEach(containedNodes::add);
             return modified;
@@ -208,20 +204,20 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         }
 
         @Override
-        public UniquePair<Square, Integer> remove(int index) {
-            UniquePair<Square, Integer> removed = super.remove(index);
+        public Node remove(int index) {
+            Node removed = super.remove(index);
             containedNodes.remove(removed);
             return removed;
         }
 
         @Override
         public boolean contains(Object o) {
-            if (o instanceof UniquePair<?, ?> node) return containedNodes.contains((UniquePair<Square, Integer>) node);
+            if (o instanceof Node node) return containedNodes.contains(node);
             else return false;
         }
 
         public List<Integer> getContainedDigits() {
-            return stream().map(UniquePair::second).distinct().toList();
+            return stream().map(Node::digit).distinct().toList();
         }
 
         public boolean isFirstLinkStrong() {
@@ -233,7 +229,7 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
             if (this == obj) return true;
             if (!(obj instanceof Cycle other)) return false;
             if (this.size() != other.size()) return false;
-            List<UniquePair<Square, Integer>> doubled = new ArrayList<>(this);
+            List<Node> doubled = new ArrayList<>(this);
             doubled.addAll(this);
             return Collections.indexOfSubList(doubled, other) != -1;
         }
@@ -241,9 +237,9 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         @Override
         public int hashCode() {
             if (isEmpty()) return 0;
-            UniquePair<Square, Integer> start = stream().min(NODE_COMPARATOR).orElseThrow();
+            Node start = stream().min(Node.COMPARATOR).orElseThrow();
             int startIndex = indexOf(start);
-            List<UniquePair<Square, Integer>> normalized = new ArrayList<>(subList(startIndex, size()));
+            List<Node> normalized = new ArrayList<>(subList(startIndex, size()));
             if (startIndex != 0) normalized.addAll(subList(0, startIndex));
             return normalized.hashCode();
         }
@@ -253,10 +249,16 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         }
     }
 
+    private record Node(Square square, int digit) {
+        public static final Comparator<Node> COMPARATOR = Comparator.comparingInt((Node node) -> node.square().getRow())
+                .thenComparingInt(node -> node.square().getCol())
+                .thenComparingInt(Node::digit);
+    }
+
     private static class NodeSet {
         private final BitSet containedNodes = new BitSet();
 
-        public void add(UniquePair<Square, Integer> node) {
+        public void add(Node node) {
             containedNodes.set(getNodeIndex(node));
         }
 
@@ -264,17 +266,17 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
             containedNodes.or(nodes.containedNodes);
         }
 
-        public void remove(UniquePair<Square, Integer> node) {
+        public void remove(Node node) {
             containedNodes.clear(getNodeIndex(node));
         }
 
-        public boolean contains(UniquePair<Square, Integer> node) {
+        public boolean contains(Node node) {
             return containedNodes.get(getNodeIndex(node));
         }
 
-        private static int getNodeIndex(UniquePair<Square, Integer> node) {
-            Square square = node.first();
-            int digit = node.second();
+        private static int getNodeIndex(Node node) {
+            Square square = node.square();
+            int digit = node.digit();
             int squareId = square.getRow() * 9 + square.getCol();
             return squareId * 9 + (digit - 1);
         }
