@@ -8,7 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class SudokuSolver {
-    private static final boolean DEBUG = false;
+    public static final boolean DEBUG = false;
     private static final boolean RUN_ALL = false;
     private final Sudoku sudoku;
 
@@ -35,6 +35,7 @@ public class SudokuSolver {
                 new NakedTripletsStrategy(sudoku),
                 new HiddenTripletsStrategy(sudoku),
                 new XWingStrategy(sudoku),
+                new ChuteRemotePairsStrategy(sudoku),
                 new XYWingStrategy(sudoku),
                 new BugStrategy(sudoku),
                 new RectangleEliminationStrategy(sudoku),

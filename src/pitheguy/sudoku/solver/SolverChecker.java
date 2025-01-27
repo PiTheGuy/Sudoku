@@ -1,14 +1,21 @@
 package pitheguy.sudoku.solver;
 
-import org.apache.commons.cli.*;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import pitheguy.sudoku.gui.Sudoku;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -17,6 +24,10 @@ public class SolverChecker {
     private static volatile boolean shutdownTriggered = false;
 
     public static void main(String[] args) throws ParseException {
+        if (SudokuSolver.DEBUG) {
+            System.err.println("Solver is still in debug mode.");
+            System.exit(1);
+        }
         CommandLineParser parser = new DefaultParser();
         CommandLine commandLine = parser.parse(createOptions(), args);
         int iterations = Integer.parseInt(commandLine.getOptionValue("iterations", "10000"));
@@ -68,7 +79,7 @@ public class SolverChecker {
         double totalTime = (System.currentTimeMillis() - startTime) / 1000.0;
         int solvedPuzzles = iterations - unsolved.size();
         double percent = (double) solvedPuzzles / iterations * 100;
-        System.out.printf("Solved %d of %d puzzles (%.2f%%) in %.2f seconds%n", solvedPuzzles, iterations, percent, totalTime);
+        System.out.printf("Solved %d of %d puzzles (" + (percent < 99.99 ? "%.2f" : "%.3f") + "%%) in %.2f seconds%n", solvedPuzzles, iterations, percent, totalTime);
         if (!unsolved.isEmpty()) {
             Collections.sort(unsolved);
             StringBuilder sb = new StringBuilder();
@@ -78,7 +89,7 @@ public class SolverChecker {
             if (unsolved.size() > limit) sb.append(", and ").append(unsolved.size() - limit).append(" more...");
             System.out.println(sb);
         }
-        if (iterations < 1000000) {
+        if (iterations <= 1000000) {
             String slowest = new HashMap<>(solveTimes).entrySet().stream()
                     .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
                     .limit(3L)
