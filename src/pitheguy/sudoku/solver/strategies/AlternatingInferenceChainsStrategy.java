@@ -122,12 +122,11 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
                 return;
             } else if (cycle.contains(node)) return;
         }
+        if (!validNextNode(cycle, node)) return;
         Set<Node> links = isStrongLink ? findStrongLinks(node) : findWeakLinks(node);
         if (links.isEmpty()) return;
-
         cycle.add(node);
         for (Node link : links) {
-            if (!validNextNode(cycle, node)) continue;
             findCycles(link, cycle, continuousCycles, discontinuousCycles, !isStrongLink, maxDepth);
         }
         cycle.removeLast();
@@ -135,8 +134,7 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
 
     private boolean validNextNode(Cycle cycle, Node node) {
         if (node.getConnectionType() == Node.ConnectionType.SINGLE) {
-            for (int i = 0; i < cycle.size() - 1; i++) {
-                Node cycleNode = cycle.get(i);
+            for (Node cycleNode : cycle) {
                 if (cycleNode.connectionType == Node.ConnectionType.SINGLE) continue;
                 if (cycleNode.digit() == node.digit() && cycleNode.squares().contains(node.squares().getFirst()))
                     return false;
@@ -368,10 +366,8 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
 
         private ConnectionType computeConnectionType() {
             if (squares.size() == 1) return ConnectionType.SINGLE;
-            if (squares.stream().allMatch(square -> square.getRow() == squares.getFirst().getRow()))
-                return ConnectionType.ROW;
-            if (squares.stream().allMatch(square -> square.getCol() == squares.getFirst().getCol()))
-                return ConnectionType.COLUMN;
+            if (squares.get(0).getRow() == squares.get(1).getRow()) return ConnectionType.ROW;
+            if (squares.get(0).getCol() == squares.get(1).getCol()) return ConnectionType.COLUMN;
             throw new IllegalStateException("Squares in node are not connected");
         }
 

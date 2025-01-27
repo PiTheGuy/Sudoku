@@ -30,6 +30,11 @@ public class SolverChecker {
         }
         CommandLineParser parser = new DefaultParser();
         CommandLine commandLine = parser.parse(createOptions(), args);
+        if (commandLine.hasOption("singlePuzzle")) {
+            int puzzleNumber = Integer.parseInt(commandLine.getOptionValue("singlePuzzle"));
+            checkSinglePuzzle(puzzleNumber);
+            return;
+        }
         int iterations = Integer.parseInt(commandLine.getOptionValue("iterations", "10000"));
         int progressUpdateInterval = Integer.parseInt(commandLine.getOptionValue("progressUpdateInterval", "50000"));
         boolean showAllPuzzles = commandLine.hasOption("all");
@@ -38,10 +43,22 @@ public class SolverChecker {
 
     public static Options createOptions() {
         Options options = new Options();
+        options.addOption("singlePuzzle", true, "Check a single puzzle");
         options.addOption("iterations", true, "Number of iterations to run");
         options.addOption("progressUpdateInterval", true, "Progress update interval");
         options.addOption("all", "Show all unsolved puzzles");
         return options;
+    }
+
+    private static void checkSinglePuzzle(int puzzleNumber) {
+        long startTime = System.currentTimeMillis();
+        Sudoku sudoku = new Sudoku(false);
+        sudoku.loadPuzzle(puzzleNumber);
+        sudoku.solvePuzzle();
+        boolean success = sudoku.isSolved();
+        long timeTaken = System.currentTimeMillis() - startTime;
+        if (success) System.out.println("Successfully solved puzzle " + puzzleNumber + " in " + timeTaken + " ms");
+        else System.out.println("Failed to solve puzzle " + puzzleNumber + " in " + timeTaken + " ms");
     }
 
     private static void run(int iterations, int progressUpdateInterval, boolean showAllPuzzles) {
@@ -93,10 +110,18 @@ public class SolverChecker {
             String slowest = new HashMap<>(solveTimes).entrySet().stream()
                     .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
                     .limit(3L)
-                    .map(e -> e.getKey() + " (" + e.getValue() + " ms)")
+                    .map(e -> getEntryString(e, unsolved))
                     .collect(Collectors.joining(", "));
             System.out.println("Slowest puzzles: " + slowest);
         }
+    }
+
+    private static String getEntryString(Map.Entry<Integer, Long> entry, List<Integer> unsolved) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(entry.getKey());
+        if (unsolved.contains(entry.getKey())) sb.append("*");
+        sb.append(" (").append(entry.getValue()).append(" ms)");
+        return sb.toString();
     }
 
     private static void printProgressIfNeeded(int iterations, int progressUpdateInterval, int completedPuzzles) {
