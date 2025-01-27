@@ -133,15 +133,14 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
     }
 
     private boolean validNextNode(Cycle cycle, Node node) {
-        if (node.getConnectionType() == Node.ConnectionType.SINGLE) {
+        for (Square square : node.squares()) {
             for (Node cycleNode : cycle) {
                 if (cycleNode.connectionType == Node.ConnectionType.SINGLE) continue;
-                if (cycleNode.digit() == node.digit() && cycleNode.squares().contains(node.squares().getFirst()))
+                if (cycleNode.digit() == node.digit() && cycleNode.squares().contains(square))
                     return false;
             }
-            return true;
         }
-        for (Square square : node.squares()) if (cycle.contains(new Node(square, node.digit()))) return false;
+        if (node.getConnectionType() != Node.ConnectionType.SINGLE) for (Square square : node.squares()) if (cycle.contains(new Node(square, node.digit()))) return false;
         return true;
     }
 
@@ -172,14 +171,19 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         Square square = node.squares().getFirst();
         List<Square> containedSquares = new ArrayList<>();
         for (Square groupSquare : group) {
-            if (groupSquare == square) continue;
+            if (node.squares().contains(groupSquare)) continue;
             if (groupSquare.isSolved()) continue;
             if (groupSquare.getCandidates().contains(digit)) containedSquares.add(groupSquare);
         }
         if (containedSquares.isEmpty()) return Optional.empty();
         else if (containedSquares.size() == 1) return Optional.of(new Node(containedSquares.getFirst(), digit));
         else if (containedSquares.size() == 2) {
-            if (groupType == GroupType.BOX) return Optional.empty();
+            if (groupType == GroupType.BOX) {
+                if (containedSquares.get(0).getRow() == containedSquares.get(1).getRow() ||
+                    containedSquares.get(0).getCol() == containedSquares.get(1).getCol())
+                    return Optional.of(new Node(containedSquares, digit));
+                else return Optional.empty();
+            }
             if (containedSquares.get(0).getBox() != containedSquares.get(1).getBox()) return Optional.empty();
             Function<Square, Integer> indexExtractor = groupType == GroupType.ROW ? Square::getRow : Square::getCol;
             if (indexExtractor.apply(square).equals(indexExtractor.apply(containedSquares.getFirst())) ||
