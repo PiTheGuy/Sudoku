@@ -8,6 +8,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 public class Square extends JPanel implements Comparable<Square> {
     private final Sudoku sudoku;
@@ -157,6 +158,17 @@ public class Square extends JPanel implements Comparable<Square> {
         if (invalid) return Color.RED;
         if (given) return Color.BLACK;
         else return Color.GRAY;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof Square square)) return false;
+        return getIndex() == square.getIndex();
+    }
+
+    @Override
+    public int hashCode() {
+        return getIndex();
     }
 
     @Override

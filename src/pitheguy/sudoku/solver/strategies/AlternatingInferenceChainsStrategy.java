@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -136,6 +137,7 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         if (node.getConnectionType() == Node.ConnectionType.SINGLE) {
             for (int i = 0; i < cycle.size() - 1; i++) {
                 Node cycleNode = cycle.get(i);
+                if (cycleNode.connectionType == Node.ConnectionType.SINGLE) continue;
                 if (cycleNode.digit() == node.digit() && cycleNode.squares().contains(node.squares().getFirst()))
                     return false;
             }
@@ -264,7 +266,8 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         @Override
         public boolean addAll(Collection<? extends Node> c) {
             boolean modified = super.addAll(c);
-            if (modified) c.stream().filter(node -> node.getConnectionType() == Node.ConnectionType.SINGLE).forEach(containedSingleNodes::add);
+            if (modified)
+                c.stream().filter(node -> node.getConnectionType() == Node.ConnectionType.SINGLE).forEach(containedSingleNodes::add);
             return modified;
         }
 
@@ -336,7 +339,17 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         }
     }
 
-    private record Node(List<Square> squares, int digit) implements Comparable<Node> {
+    private static final class Node implements Comparable<Node> {
+        private final List<Square> squares;
+        private final int digit;
+        private final ConnectionType connectionType;
+
+        public Node(List<Square> squares, int digit) {
+            this.squares = squares;
+            this.digit = digit;
+            connectionType = computeConnectionType();
+        }
+
         public Node(Square square, int digit) {
             this(List.of(square), digit);
         }
@@ -350,11 +363,50 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         }
 
         public ConnectionType getConnectionType() {
+            return connectionType;
+        }
+
+        private ConnectionType computeConnectionType() {
             if (squares.size() == 1) return ConnectionType.SINGLE;
-            if (squares.stream().allMatch(square -> square.getRow() == squares.getFirst().getRow())) return ConnectionType.ROW;
-            if (squares.stream().allMatch(square -> square.getCol() == squares.getFirst().getCol())) return ConnectionType.COLUMN;
+            if (squares.stream().allMatch(square -> square.getRow() == squares.getFirst().getRow()))
+                return ConnectionType.ROW;
+            if (squares.stream().allMatch(square -> square.getCol() == squares.getFirst().getCol()))
+                return ConnectionType.COLUMN;
             throw new IllegalStateException("Squares in node are not connected");
         }
+
+        public List<Square> squares() {
+            return squares;
+        }
+
+        public int digit() {
+            return digit;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == this) return true;
+            if (obj == null || obj.getClass() != this.getClass()) return false;
+            var that = (Node) obj;
+            if (this.digit != that.digit) return false;
+            if (this.connectionType != that.connectionType) return false;
+            if (this.connectionType == ConnectionType.SINGLE) return this.squares.getFirst() == that.squares.getFirst();
+            return Objects.equals(this.squares, that.squares);
+        }
+
+        @Override
+        public int hashCode() {
+            if (connectionType == ConnectionType.SINGLE) return squares.getFirst().getIndex() * 31 + digit;
+            return squares.hashCode() * 31 + digit;
+        }
+
+        @Override
+        public String toString() {
+            return "Node[" +
+                   "squares=" + squares + ", " +
+                   "digit=" + digit + ']';
+        }
+
 
         public enum ConnectionType {
             SINGLE,
@@ -367,7 +419,8 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         private final BitSet containedNodes = new BitSet();
 
         public void add(Node node) {
-            if (node.getConnectionType() != Node.ConnectionType.SINGLE) throw new IllegalArgumentException("Only single nodes are allowed");
+            if (node.getConnectionType() != Node.ConnectionType.SINGLE)
+                throw new IllegalArgumentException("Only single nodes are allowed");
             containedNodes.set(getNodeIndex(node));
         }
 
