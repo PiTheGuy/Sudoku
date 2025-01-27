@@ -195,55 +195,85 @@ public class Sudoku extends JFrame {
     }
 
     public void copyBoardToClipboard(boolean includeCandidates) {
+        if (includeCandidates) {
+            copyFullBoardToClipboard();
+            return;
+        }
         StringBuilder sb = new StringBuilder();
         for (int cell = 0; cell < 81; cell++) {
             String value = board[cell];
-            sb.append(value.isEmpty() ? includeCandidates ? cachedSquares[cell].getCandidates() : "0" : value);
+            sb.append(value.isEmpty() ? "0" : value);
+        }
+        Util.copyToClipboard(sb.toString());
+    }
+
+    private void copyFullBoardToClipboard() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("S9B");
+        for (int cell = 0; cell < 81; cell++) {
+            Square square = cachedSquares[cell];
+            short cellData;
+            if (square.isSolved()) {
+                cellData = (short) (square.getValue().charAt(0) - '0');
+                if (square.isGiven()) cellData += 9;
+            } else {
+                cellData = (short) (square.getCandidates().pack() + 18);
+            }
+            String cellString = Integer.toString(cellData, Character.MAX_RADIX);
+            if (cellString.length() == 1) cellString = "0" + cellString;
+            sb.append(cellString);
         }
         Util.copyToClipboard(sb.toString());
     }
 
     public void pasteBoardFromClipboard() {
         String board = Util.readFromClipboard();
+        if (board == null) return;
+        if (board.startsWith("S9B")) {
+            loadFullBoard(board);
+            return;
+        }
         if (!validateBoard(board)) {
-            JOptionPane.showMessageDialog(this, "Failed to paste board.", "Error", JOptionPane.ERROR_MESSAGE);
+            System.out.println("Warning: attempted to paste invalid or nonexistent board from clipboard");
             return;
         }
         Arrays.fill(this.board, "");
         resetCandidates();
-        try {
-            for (int cell = 0; cell < 81; cell++) {
-                Square square = cachedSquares[cell];
-                char c = board.charAt(0);
-                int nextIndex;
-                if (Character.isDigit(c)) {
-                    String value = String.valueOf(c);
-                    this.board[cell] = value.equals("0") ? "" : value;
-                    square.setGiven(!value.equals("0"));
-                    nextIndex = 1;
-                } else if (c == '[') {
-                    int closingBracket = board.indexOf(']');
-                    if (closingBracket == -1) throw new IllegalStateException("Closing bracket not found");
-                    String candidatesString = board.substring(1, closingBracket);
-                    List<Integer> candidates = new ArrayList<>();
-                    for (int i = 0; i < candidatesString.length(); i++) {
-                        char ch = candidatesString.charAt(i);
-                        if (ch < '1' || ch > '9') throw new IllegalStateException("Unexpected character: '" + ch + "'");
-                        candidates.add(ch - '0');
-                    }
-                    short flags = DigitCandidates.getFlags(candidates.stream().mapToInt(Integer::intValue).toArray());
-                    square.getCandidates().setFlags(flags);
-                    square.setGiven(false);
-                    nextIndex = closingBracket + 1;
-                } else throw new IllegalStateException("Unexpected character '" + c + "'");
-                square.invalidateCachedValue();
-                board = board.substring(nextIndex);
-            }
-        } catch (IllegalStateException e) {
-            JOptionPane.showMessageDialog(this, "Failed to paste board.", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
+        for (int cell = 0; cell < 81; cell++) {
+            String value = String.valueOf(board.charAt(cell));
+            this.board[cell] = value.equals("0") ? "" : value;
+            cachedSquares[cell].setGiven(!value.equals("0"));
+            cachedSquares[cell].invalidateCachedValue();
         }
         repaint();
+    }
+
+    private void loadFullBoard(String board) {
+        try {
+            board = board.substring("S9B".length());
+            if (board.length() != 162) throw new IOException("Unexpected length: expected 162, got " + board.length());
+            Arrays.fill(this.board, "");
+            for (int i = 0; i < 81; i++) {
+                Square square = cachedSquares[i];
+                String cellString = board.substring(i * 2, i * 2 + 2);
+                int cellData = Integer.parseInt(cellString, Character.MAX_RADIX);
+                if (cellData <= 0) throw new IOException("Invalid cell data: " + cellData);
+                else if (cellData <= 9) {
+                    square.setValue(String.valueOf(cellData));
+                    square.setGiven(true);
+                } else if (cellData <= 18) {
+                    square.setValue(String.valueOf(cellData - 9));
+                    square.setGiven(false);
+                } else if (cellData <= 529) {
+                    square.getCandidates().setFlags((short) (cellData - 18));
+                    square.setGiven(false);
+                } else throw new IOException("Invalid cell data: " + cellData);
+                square.invalidateCachedValue();
+            }
+        } catch (IOException e) {
+            System.out.println("Warning: attempted to load malformed full board from clipboard: " + e.getMessage());
+        }
+
     }
 
     private static boolean validateBoard(String board) {
@@ -251,7 +281,7 @@ public class Sudoku extends JFrame {
         if (board.length() < 81) return false;
         for (int i = 0; i < board.length(); i++) {
             char c = board.charAt(i);
-            if (!Character.isDigit(c) && c != '[' && c != ']') return false;
+            if (!Character.isDigit(c)) return false;
         }
         return true;
     }

@@ -99,6 +99,10 @@ public class DigitCandidates {
         return new DigitCandidates(flags);
     }
 
+    public short pack() {
+        return flags;
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder("[");

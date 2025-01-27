@@ -35,6 +35,10 @@ public class Square extends JPanel implements Comparable<Square> {
         this.invalid = invalid;
     }
 
+    public boolean isGiven() {
+        return given;
+    }
+
     public void setGiven(boolean given) {
         this.given = given;
     }
