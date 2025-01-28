@@ -13,6 +13,11 @@ public class SolverUtils {
                square1.getBox() == square2.getBox();
     }
 
+    public static boolean isConnectedNoBox(Square square1, Square square2) {
+        return square1.getRow() == square2.getRow() ||
+               square1.getCol() == square2.getCol();
+    }
+
     public static boolean hasDigitSolved(List<Square> squares, int digit) {
         for (Square square : squares) {
             String value = square.getValue();

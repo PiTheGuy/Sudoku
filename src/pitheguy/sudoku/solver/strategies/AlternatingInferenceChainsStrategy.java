@@ -32,6 +32,7 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
     private static final List<List<Integer>> GROUP_ELIGIBLE_INDEX_TRIPLETS = List.of(List.of(0, 1, 2), List.of(3, 4, 5), List.of(6, 7, 8));
     private final Map<Node, Set<Node>> strongLinkCache = new HashMap<>();
     private final Map<Node, Set<Node>> weakLinkCache = new HashMap<>();
+    private final Map<Square, List<AlmostLockedSet>> almostLockedSetCache = new HashMap<>();
 
     public AlternatingInferenceChainsStrategy(Sudoku sudoku) {
         super(sudoku);
@@ -49,6 +50,7 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         boolean changed = false;
         Set<Cycle> continuousCycles = new LinkedHashSet<>();
         Set<Cycle> discontinuousCycles = new LinkedHashSet<>();
+        computeAlmostLockedSets();
         for (Square square : sudoku.getAllSquares()) {
             if (square.isSolved()) continue;
             for (int digit : square.getCandidates().getAllCandidates()) {
@@ -111,6 +113,19 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         return changed;
     }
 
+    private void computeAlmostLockedSets() {
+        for (Pair<Square> pair : Util.getAllPairs(sudoku.getAllSquares())) {
+            if (!SolverUtils.isConnectedNoBox(pair.first(), pair.second())) continue;
+            if (pair.first().isSolved() || pair.second().isSolved()) continue;
+            if (pair.first().getCandidates().or(pair.second().getCandidates()).count() != 3) continue;
+            DigitCandidates sharedCandidates = pair.first().getCandidates().and(pair.second().getCandidates());
+            if (sharedCandidates.count() != 2) continue;
+            AlmostLockedSet als = new AlmostLockedSet(pair.first(), pair.second());
+            almostLockedSetCache.computeIfAbsent(pair.first(), s -> new ArrayList<>()).add(als);
+            almostLockedSetCache.computeIfAbsent(pair.second(), s -> new ArrayList<>()).add(als);
+        }
+    }
+
     private void findCycles(Node node, Cycle cycle, Set<Cycle> continuousCycles, Set<Cycle> discontinuousCycles, boolean isStrongLink, int maxDepth) {
         if (cycle.size() > maxDepth) return;
         if (!cycle.isEmpty()) {
@@ -155,13 +170,20 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
             int newDigit = candidates.getFirst();
             links.add(new Node(squares, newDigit));
         }
+        if (node.getConnectionType() == Node.ConnectionType.SINGLE && almostLockedSetCache.containsKey(squares.getFirst())) {
+            Square square = squares.getFirst();
+            List<AlmostLockedSet> sets = almostLockedSetCache.get(square);
+            for (AlmostLockedSet set : sets)
+                if (set.getExtraDigit() == node.digit() && set.getExtraDigitSquare() == square)
+                    links.addAll(set.getPossibleNodes());
+        }
         List<Optional<Node>> externalLinks = new ArrayList<>();
-
         if (node.getConnectionType() != Node.ConnectionType.COLUMN)
             externalLinks.add(findStrongLinksForGroup(node, squares.getFirst().getSurroundingRow(), digit, GroupType.ROW));
         if (node.getConnectionType() != Node.ConnectionType.ROW)
             externalLinks.add(findStrongLinksForGroup(node, squares.getFirst().getSurroundingColumn(), digit, GroupType.COLUMN));
-        externalLinks.add(findStrongLinksForGroup(node, squares.getFirst().getSurroundingBox(), digit, GroupType.BOX));
+        if (node.getConnectionType() == Node.ConnectionType.SINGLE || SolverUtils.allInSameGroup(node.squares(), GroupType.BOX))
+            externalLinks.add(findStrongLinksForGroup(node, squares.getFirst().getSurroundingBox(), digit, GroupType.BOX));
         links.addAll(externalLinks.stream().filter(Optional::isPresent).map(Optional::get).toList());
         strongLinkCache.put(node, links);
         return links;
@@ -207,7 +229,8 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
             weakLinks.addAll(findWeakLinksForGroup(squares.getFirst().getSurroundingRow(), digit, GroupType.ROW));
         if (node.getConnectionType() != Node.ConnectionType.ROW)
             weakLinks.addAll(findWeakLinksForGroup(squares.getFirst().getSurroundingColumn(), digit, GroupType.COLUMN));
-        weakLinks.addAll(findWeakLinksForGroup(squares.getFirst().getSurroundingBox(), digit, GroupType.BOX));
+        if (node.getConnectionType() == Node.ConnectionType.SINGLE || SolverUtils.allInSameGroup(node.squares(), GroupType.BOX))
+            weakLinks.addAll(findWeakLinksForGroup(squares.getFirst().getSurroundingBox(), digit, GroupType.BOX));
         weakLinkCache.put(node, weakLinks);
         return weakLinks;
     }
@@ -432,6 +455,34 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
             int digit = node.digit();
             int squareId = square.getRow() * 9 + square.getCol();
             return squareId * 9 + (digit - 1);
+        }
+    }
+
+    private record AlmostLockedSet(Square square1, Square square2) {
+        public List<Square> getSquares() {
+            return List.of(square1, square2);
+        }
+
+        public DigitCandidates getSharedCandidates() {
+            return square1.getCandidates().and(square2.getCandidates());
+        }
+
+        public int getExtraDigit() {
+            DigitCandidates candidates = square1.getCandidates().or(square2.getCandidates());
+            candidates.removeAll(getSharedCandidates());
+            return candidates.getFirst();
+        }
+
+        public Square getExtraDigitSquare() {
+            int extraDigit = getExtraDigit();
+            if (square1.getCandidates().contains(extraDigit)) return square1;
+            else return square2;
+        }
+
+        public List<Node> getPossibleNodes() {
+            List<Node> possibleNodes = new ArrayList<>();
+            for (int digit : getSharedCandidates().getAllCandidates()) possibleNodes.add(new Node(getSquares(), digit));
+            return possibleNodes;
         }
     }
 }
