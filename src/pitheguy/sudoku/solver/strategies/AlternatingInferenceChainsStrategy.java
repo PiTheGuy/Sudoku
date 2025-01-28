@@ -155,7 +155,7 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
                     return false;
             }
         }
-        if (node.getConnectionType() != Node.ConnectionType.SINGLE) for (Square square : node.squares()) if (cycle.contains(new Node(square, node.digit()))) return false;
+        if (node.getConnectionType() != Node.ConnectionType.SINGLE) for (Square square : node.squares()) if (cycle.contains(square, node.digit())) return false;
         return true;
     }
 
@@ -321,6 +321,10 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
             } else return false;
         }
 
+        public boolean contains(Square square, int digit) {
+            return containedSingleNodes.contains(square, digit);
+        }
+
         public List<Integer> getContainedDigits() {
             return stream().map(Node::digit).distinct().toList();
         }
@@ -357,12 +361,11 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
     private static final class Node implements Comparable<Node> {
         private final List<Square> squares;
         private final int digit;
-        private final ConnectionType connectionType;
+        private ConnectionType connectionType;
 
         public Node(List<Square> squares, int digit) {
             this.squares = squares;
             this.digit = digit;
-            connectionType = computeConnectionType();
         }
 
         public Node(Square square, int digit) {
@@ -378,6 +381,7 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         }
 
         public ConnectionType getConnectionType() {
+            if (connectionType == null) connectionType = computeConnectionType();
             return connectionType;
         }
 
@@ -402,14 +406,14 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
             if (obj == null || obj.getClass() != this.getClass()) return false;
             var that = (Node) obj;
             if (this.digit != that.digit) return false;
-            if (this.connectionType != that.connectionType) return false;
-            if (this.connectionType == ConnectionType.SINGLE) return this.squares.getFirst() == that.squares.getFirst();
+            if (this.getConnectionType() != that.getConnectionType()) return false;
+            if (this.getConnectionType() == ConnectionType.SINGLE) return this.squares.getFirst() == that.squares.getFirst();
             return Objects.equals(this.squares, that.squares);
         }
 
         @Override
         public int hashCode() {
-            if (connectionType == ConnectionType.SINGLE) return squares.getFirst().getIndex() * 31 + digit;
+            if (getConnectionType() == ConnectionType.SINGLE) return squares.getFirst().getIndex() * 31 + digit;
             return squares.hashCode() * 31 + digit;
         }
 
@@ -448,6 +452,12 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         public boolean contains(Node node) {
             if (node.getConnectionType() == Node.ConnectionType.SINGLE) return containedNodes.get(getNodeIndex(node));
             else return false;
+        }
+
+        public boolean contains(Square square, int digit) {
+            int squareId = square.getRow() * 9 + square.getCol();
+            int index = squareId * 9 + (digit - 1);
+            return containedNodes.get(index);
         }
 
         private static int getNodeIndex(Node node) {
