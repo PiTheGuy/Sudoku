@@ -177,23 +177,13 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         }
         if (containedSquares.isEmpty()) return Optional.empty();
         else if (containedSquares.size() == 1) return Optional.of(new Node(containedSquares.getFirst(), digit));
-        else if (containedSquares.size() == 2) {
+        else if (containedSquares.size() == 2 || containedSquares.size() == 3) {
             if (groupType == GroupType.BOX) {
-                if (containedSquares.get(0).getRow() == containedSquares.get(1).getRow() ||
-                    containedSquares.get(0).getCol() == containedSquares.get(1).getCol())
+                if (SolverUtils.allInSameGroup(containedSquares, false))
                     return Optional.of(new Node(containedSquares, digit));
                 else return Optional.empty();
             }
-            if (containedSquares.get(0).getBox() != containedSquares.get(1).getBox()) return Optional.empty();
-            Function<Square, Integer> indexExtractor = groupType == GroupType.ROW ? Square::getRow : Square::getCol;
-            if (indexExtractor.apply(square).equals(indexExtractor.apply(containedSquares.getFirst())) ||
-                square.getBox() == containedSquares.getFirst().getBox()) {
-                return Optional.of(new Node(containedSquares, digit));
-            }
-        } else if (containedSquares.size() == 3) {
-            if (groupType == GroupType.BOX) return Optional.empty();
-            if (containedSquares.get(0).getBox() != containedSquares.get(1).getBox() ||
-                containedSquares.get(1).getBox() != containedSquares.get(2).getBox()) return Optional.empty();
+            if (!SolverUtils.allInSameGroup(containedSquares, GroupType.BOX)) return Optional.empty();
             Function<Square, Integer> indexExtractor = groupType == GroupType.ROW ? Square::getRow : Square::getCol;
             if (indexExtractor.apply(square).equals(indexExtractor.apply(containedSquares.getFirst())) ||
                 square.getBox() == containedSquares.getFirst().getBox()) {

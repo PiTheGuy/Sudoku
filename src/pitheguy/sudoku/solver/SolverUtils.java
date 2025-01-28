@@ -42,5 +42,37 @@ public class SolverUtils {
         });
         return bivalueSquares;
     }
+
+    public static boolean allInSameGroup(List<Square> squares, boolean allowBox) {
+        if (squares.size() < 2) return true;
+        boolean sameRow = true;
+        int row = squares.getFirst().getRow();
+        for (int i = 1; i < squares.size(); i++) {
+            if (squares.get(i).getRow() != row) {
+                sameRow = false;
+                break;
+            }
+        }
+        boolean sameCol = true;
+        int col = squares.getFirst().getCol();
+        for (int i = 1; i < squares.size(); i++) {
+            if (squares.get(i).getCol() != col) {
+                sameCol = false;
+                break;
+            }
+        }
+        if (sameRow || sameCol) return true;
+        if (!allowBox) return false;
+        int box = squares.getFirst().getBox();
+        for (int i = 1; i < squares.size(); i++) if (squares.get(i).getBox() != box) return false;
+        return true;
+    }
+
+    public static boolean allInSameGroup(List<Square> squares, GroupType groupType) {
+        if (squares.size() < 2) return true;
+        int index = groupType.get(squares.getFirst());
+        for (int i = 1; i < squares.size(); i++) if (groupType.get(squares.get(i)) != index) return false;
+        return true;
+    }
 }
 
