@@ -61,10 +61,8 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
                 findCycles(new Node(square, digit), new Cycle(false), continuousCycles, discontinuousCycles, disconnectedCycles, false, maxDepth, requireClosed);
             }
         }
-        cycles:
         for (Cycle cycle : continuousCycles) {
-            for (Node node : cycle)
-                if (!node.squares().stream().allMatch(s -> s.getCandidates().contains(node.digit()))) continue cycles;
+            if (isCycleInvalid(cycle)) continue;
             //System.out.println("Cycle found: " + cycle);
             for (int i = 0; i < cycle.size() - 1; i++) {
                 if (cycle.get(i).getConnectionType() == Node.ConnectionType.SINGLE &&
@@ -101,11 +99,9 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
                 }
             }
         }
-        cycles:
         for (Cycle cycle : discontinuousCycles) {
             //System.out.println("Discontinuous cycle: " + cycle);
-            for (Node node : cycle)
-                if (!node.squares().stream().allMatch(s -> s.getCandidates().contains(node.digit()))) continue cycles;
+            if (isCycleInvalid(cycle)) continue;
             if (cycle.getFirst().getConnectionType() != Node.ConnectionType.SINGLE) continue;
             Square square = cycle.getFirst().squares().getFirst();
             int digit = cycle.getFirst().digit();
@@ -114,10 +110,16 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
             else changed |= square.getCandidates().remove(digit);
         }
         if (changed || requireClosed) return changed;
+        changed = processDigitForcingChains(disconnectedCycles);
+        changed |= processCellForcingChains(disconnectedCycles);
+        return changed;
+    }
+
+    private static boolean processDigitForcingChains(Set<Cycle> disconnectedCycles) {
+        boolean changed = false;
         cycles:
         for (Cycle cycle : disconnectedCycles) {
-            for (Node node : cycle)
-                if (!node.squares().stream().allMatch(s -> s.getCandidates().contains(node.digit()))) continue cycles;
+            if (isCycleInvalid(cycle)) continue;
             if (!cycle.isFirstLinkStrong()) continue;
             if (cycle.getFirst().getConnectionType() != Node.ConnectionType.SINGLE) continue;
             if (cycle.getFirst().digit() != cycle.getLast().digit()) continue;
@@ -141,6 +143,55 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
             }
         }
         return changed;
+    }
+
+    private boolean processCellForcingChains(Set<Cycle> disconnectedCycles) {
+        boolean changed = false;
+        Map<Node, List<Cycle>> cyclesByStart = new HashMap<>();
+        for (Cycle cycle : disconnectedCycles) {
+            if (isCycleInvalid(cycle)) continue;
+            if (cycle.getFirst().getConnectionType() != Node.ConnectionType.SINGLE) continue;
+            cyclesByStart.computeIfAbsent(cycle.getFirst(), k -> new ArrayList<>()).add(cycle);
+        }
+        squares:
+        for (Square square : sudoku.getAllSquares()) {
+            if (square.isSolved()) continue;
+            if (square.getCandidates().count() < 2) continue;
+            List<Integer> candidates = square.getCandidates().getAllCandidates();
+            for (int digit : candidates) {
+                Node node = new Node(square, digit);
+                if (!cyclesByStart.containsKey(node)) continue squares;
+            }
+            List<Map<Node, NodeState>> conclusions = new ArrayList<>();
+            for (int digit : candidates) {
+                Map<Node, NodeState> map = new HashMap<>();
+                List<Cycle> cycles = cyclesByStart.get(new Node(square, digit));
+                for (Cycle cycle : cycles) {
+                    boolean on = true;
+                    for (Node node : cycle) {
+                        NodeState newState = on ? NodeState.turnOn(map.get(node)) : NodeState.turnOff(map.get(node));
+                        map.put(node, newState);
+                        on = !on;
+                    }
+                }
+                conclusions.add(map);
+            }
+            for (Node node : conclusions.getFirst().keySet()) {
+                if (node.getConnectionType() != Node.ConnectionType.SINGLE) continue;
+                if (!conclusions.stream().allMatch(map -> map.containsKey(node))) continue;
+                if (conclusions.stream().allMatch(map -> map.get(node).isOn()) && node.squares().getFirst().getCandidates().contains(node.digit()))
+                    changed |= node.squares().getFirst().getCandidates().setFlags(DigitCandidates.getFlags(node.digit()));
+                else if (conclusions.stream().allMatch(map -> map.get(node).isOff()))
+                    changed |= node.squares.getFirst().getCandidates().remove(node.digit());
+            }
+        }
+        return changed;
+    }
+
+    private static boolean isCycleInvalid(Cycle cycle) {
+        for (Node node : cycle)
+            if (!node.squares().stream().allMatch(s -> s.getCandidates().contains(node.digit()))) return true;
+        return false;
     }
 
     private void computeAlmostLockedSets() {
@@ -530,6 +581,36 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
             List<Node> possibleNodes = new ArrayList<>();
             for (int digit : getSharedCandidates().getAllCandidates()) possibleNodes.add(new Node(getSquares(), digit));
             return possibleNodes;
+        }
+    }
+
+    private enum NodeState {
+        ON,
+        OFF,
+        BOTH;
+
+        public boolean isOn() {
+            return this == ON || this == BOTH;
+        }
+
+        public boolean isOff() {
+            return this == OFF || this == BOTH;
+        }
+
+        public static NodeState turnOn(NodeState state) {
+            if (state == null) return ON;
+            return switch (state) {
+                case ON -> ON;
+                case OFF, BOTH -> BOTH;
+            };
+        }
+
+        public static NodeState turnOff(NodeState state) {
+            if (state == null) return OFF;
+            return switch (state) {
+                case OFF -> OFF;
+                case ON, BOTH -> BOTH;
+            };
         }
     }
 }
