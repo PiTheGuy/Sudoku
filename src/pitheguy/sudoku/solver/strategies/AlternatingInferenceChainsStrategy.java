@@ -16,6 +16,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -40,22 +41,24 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
 
     @Override
     public boolean solve() {
-        if (solveImpl(8)) return true;
-        if (solveImpl(10)) return true;
-        if (solveImpl(15)) return true;
+        computeAlmostLockedSets();
+        if (solveImpl(8, true)) return true;
+        if (solveImpl(10, true)) return true;
+        if (solveImpl(15, true)) return true;
+        if (solveImpl(15, false)) return true;
         return false;
     }
 
-    private boolean solveImpl(int maxDepth) {
+    private boolean solveImpl(int maxDepth, boolean requireClosed) {
         boolean changed = false;
         Set<Cycle> continuousCycles = new LinkedHashSet<>();
         Set<Cycle> discontinuousCycles = new LinkedHashSet<>();
-        computeAlmostLockedSets();
+        Set<Cycle> disconnectedCycles = new LinkedHashSet<>();
         for (Square square : sudoku.getAllSquares()) {
             if (square.isSolved()) continue;
             for (int digit : square.getCandidates().getAllCandidates()) {
-                findCycles(new Node(square, digit), new Cycle(true), continuousCycles, discontinuousCycles, true, maxDepth);
-                findCycles(new Node(square, digit), new Cycle(false), continuousCycles, discontinuousCycles, false, maxDepth);
+                findCycles(new Node(square, digit), new Cycle(true), continuousCycles, discontinuousCycles, disconnectedCycles, true, maxDepth, requireClosed);
+                findCycles(new Node(square, digit), new Cycle(false), continuousCycles, discontinuousCycles, disconnectedCycles, false, maxDepth, requireClosed);
             }
         }
         cycles:
@@ -110,6 +113,33 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
             if (cycle.isFirstLinkStrong()) changed |= square.getCandidates().setFlags(DigitCandidates.getFlags(digit));
             else changed |= square.getCandidates().remove(digit);
         }
+        if (changed || requireClosed) return changed;
+        cycles:
+        for (Cycle cycle : disconnectedCycles) {
+            for (Node node : cycle)
+                if (!node.squares().stream().allMatch(s -> s.getCandidates().contains(node.digit()))) continue cycles;
+            if (!cycle.isFirstLinkStrong()) continue;
+            if (cycle.getFirst().getConnectionType() != Node.ConnectionType.SINGLE) continue;
+            if (cycle.getFirst().digit() != cycle.getLast().digit()) continue;
+            if (cycle.size() % 2 != 0) continue;
+            //System.out.println("Disconnected cycle: " + cycle);
+            Square startSquare = cycle.getFirst().squares().getFirst();
+            Square endSquare = cycle.getLast().squares().getFirst();
+            if (!SolverUtils.isConnected(startSquare, endSquare)) continue;
+            Set<Square> affectedSquares = new HashSet<>();
+            if (startSquare.getRow() == endSquare.getRow()) affectedSquares.addAll(startSquare.getSurroundingRow());
+            if (startSquare.getCol() == endSquare.getCol()) affectedSquares.addAll(startSquare.getSurroundingColumn());
+            if (startSquare.getBox() == endSquare.getBox()) affectedSquares.addAll(startSquare.getSurroundingBox());
+            int digit = cycle.getFirst().digit();
+            for (int i = 1; i < cycle.size() - 1; i++)
+                for (Square square : affectedSquares) if (cycle.get(i).squares().contains(square)) continue cycles;
+            for (Square square : affectedSquares) {
+                if (square == startSquare || square == endSquare) continue;
+                if (square.isSolved()) continue;
+                //System.out.println("Removing " + digit + " from " + square);
+                changed |= square.getCandidates().remove(digit);
+            }
+        }
         return changed;
     }
 
@@ -126,7 +156,7 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         }
     }
 
-    private void findCycles(Node node, Cycle cycle, Set<Cycle> continuousCycles, Set<Cycle> discontinuousCycles, boolean isStrongLink, int maxDepth) {
+    private void findCycles(Node node, Cycle cycle, Set<Cycle> continuousCycles, Set<Cycle> discontinuousCycles, Set<Cycle> disconnectedCycles, boolean isStrongLink, int maxDepth, boolean requireClosed) {
         if (cycle.size() > maxDepth) return;
         if (!cycle.isEmpty()) {
             if (cycle.getFirst().equals(node)) {
@@ -139,10 +169,17 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         }
         if (!validNextNode(cycle, node)) return;
         Set<Node> links = isStrongLink ? findStrongLinks(node) : findWeakLinks(node);
-        if (links.isEmpty()) return;
+        if (links.isEmpty()) {
+            if (!requireClosed) {
+                Cycle copy = cycle.copy();
+                copy.add(node);
+                if (cycle.size() > 2 && node.getConnectionType() == Node.ConnectionType.SINGLE) disconnectedCycles.add(copy);
+            }
+            return;
+        }
         cycle.add(node);
         for (Node link : links) {
-            findCycles(link, cycle, continuousCycles, discontinuousCycles, !isStrongLink, maxDepth);
+            findCycles(link, cycle, continuousCycles, discontinuousCycles, disconnectedCycles, !isStrongLink, maxDepth, requireClosed);
         }
         cycle.removeLast();
     }
