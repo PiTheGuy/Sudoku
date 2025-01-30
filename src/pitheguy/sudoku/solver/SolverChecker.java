@@ -7,15 +7,26 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import pitheguy.sudoku.gui.Sudoku;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Scanner;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -36,18 +47,48 @@ public class SolverChecker {
             checkSinglePuzzle(puzzleNumber);
             return;
         }
-        int iterations = Integer.parseInt(commandLine.getOptionValue("iterations", "10000"));
+        PuzzleInfo puzzleInfo = parsePuzzleInfo(commandLine);
         int progressUpdateInterval = Integer.parseInt(commandLine.getOptionValue("progressUpdateInterval", "50000"));
         boolean showAllPuzzles = commandLine.hasOption("all");
-        run(iterations, progressUpdateInterval, showAllPuzzles);
+        Optional<File> unsolvedOutput = Optional.ofNullable(commandLine.getOptionValue("unsolvedOutput")).map(File::new);
+        run(puzzleInfo, progressUpdateInterval, showAllPuzzles, unsolvedOutput);
+    }
+
+    private static PuzzleInfo parsePuzzleInfo(CommandLine commandLine) {
+        if (commandLine.hasOption("puzzleIndexes")) {
+            IntStream.Builder builder = IntStream.builder();
+            int size = 0;
+            int max = 0;
+            try (Scanner scanner = new Scanner(new File(commandLine.getOptionValue("puzzleIndexes")))) {
+                while (scanner.hasNextLine()) {
+                    String line = scanner.nextLine();
+                    int puzzleIndex = Integer.parseInt(line);
+                    builder.add(puzzleIndex);
+                    if (puzzleIndex > max) max = puzzleIndex;
+                    size++;
+                }
+            } catch (IOException e) {
+                System.err.println("Failed to read puzzle index file.");
+                System.exit(1);
+            } catch (NumberFormatException e) {
+                System.err.println("Failed to parse puzzle index file.");
+                System.exit(1);
+            }
+            return new PuzzleInfo(builder.build(), size, max);
+        } else {
+            int iterations = Integer.parseInt(commandLine.getOptionValue("iterations", "10000"));
+            return new PuzzleInfo(IntStream.range(1, iterations), iterations, iterations);
+        }
     }
 
     public static Options createOptions() {
         Options options = new Options();
         options.addOption("singlePuzzle", true, "Check a single puzzle");
+        options.addOption("puzzleIndexes", true, "Load puzzle indexes to test from a file");
         options.addOption("iterations", true, "Number of iterations to run");
         options.addOption("progressUpdateInterval", true, "Progress update interval");
         options.addOption("all", "Show all unsolved puzzles");
+        options.addOption("unsolvedOutput", true, "Output unsolved puzzles to file. Implies -all");
         return options;
     }
 
@@ -62,13 +103,13 @@ public class SolverChecker {
         else System.out.println("Failed to solve puzzle " + puzzleNumber + " in " + timeTaken + " ms");
     }
 
-    private static void run(int iterations, int progressUpdateInterval, boolean showAllPuzzles) {
+    private static void run(PuzzleInfo puzzleInfo, int progressUpdateInterval, boolean showAllPuzzles, Optional<File> unsolvedOutput) {
         long startTime = System.currentTimeMillis();
         List<Integer> unsolved = Collections.synchronizedList(new ArrayList<>());
         AtomicInteger completed = new AtomicInteger(0);
         Map<Integer, Long> solveTimes = new ConcurrentHashMap<>();
         ThreadLocal<Sudoku> threadLocalSudoku = ThreadLocal.withInitial(() -> new Sudoku(false));
-        ByteBuffer buffer = ByteBuffer.allocate(164 * iterations);
+        ByteBuffer buffer = ByteBuffer.allocate(164 * puzzleInfo.max());
         try (FileChannel fileChannel = new FileInputStream("sudoku.csv").getChannel()) {
             fileChannel.read(buffer);
             buffer.flip();
@@ -76,8 +117,8 @@ public class SolverChecker {
             System.err.println("Failed to load puzzles file");
             System.exit(1);
         }
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> summarizeProgress(completed.get(), showAllPuzzles, startTime, unsolved, solveTimes)));
-        IntStream.range(1, iterations).parallel().forEach(i -> {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> summarizeProgress(completed.get(), showAllPuzzles, startTime, unsolved, solveTimes, unsolvedOutput)));
+        puzzleInfo.puzzles().parallel().forEach(i -> {
             Sudoku sudoku = threadLocalSudoku.get();
             byte[] bytes = new byte[Sudoku.BYTES_PER_LINE];
             buffer.get((i - 1) * Sudoku.BYTES_PER_LINE, bytes, 0, Sudoku.BYTES_PER_LINE);
@@ -86,12 +127,12 @@ public class SolverChecker {
             sudoku.solvePuzzle();
             solveTimes.put(i, System.currentTimeMillis() - start);
             if (!sudoku.isSolved()) unsolved.add(i);
-            printProgressIfNeeded(iterations, progressUpdateInterval, completed.incrementAndGet());
+            printProgressIfNeeded(puzzleInfo.size(), progressUpdateInterval, completed.incrementAndGet());
         });
-        summarizeProgress(iterations, showAllPuzzles, startTime, unsolved, solveTimes);
+        summarizeProgress(puzzleInfo.size(), showAllPuzzles, startTime, unsolved, solveTimes, unsolvedOutput);
     }
 
-    private static void summarizeProgress(int iterations, boolean showAllPuzzles, long startTime, List<Integer> unsolved, Map<Integer, Long> solveTimes) {
+    private static void summarizeProgress(int iterations, boolean showAllPuzzles, long startTime, List<Integer> unsolved, Map<Integer, Long> solveTimes, Optional<File> unsolvedOutput) {
         if (shutdownTriggered) return;
         shutdownTriggered = true;
         double totalTime = (System.currentTimeMillis() - startTime) / 1000.0;
@@ -102,12 +143,21 @@ public class SolverChecker {
         System.out.printf("Solved %d of %d puzzles (" + percentFormat + "%%) in %.2f seconds%n", solvedPuzzles, iterations, percent, totalTime);
         if (!unsolved.isEmpty()) {
             Collections.sort(unsolved);
-            StringBuilder sb = new StringBuilder();
-            sb.append("Unsolved puzzles: ");
-            int limit = showAllPuzzles ? unsolved.size() : 10;
-            sb.append(unsolved.stream().limit(limit).map(String::valueOf).collect(Collectors.joining(", ")));
-            if (unsolved.size() > limit) sb.append(", and ").append(unsolved.size() - limit).append(" more...");
-            System.out.println(sb);
+            if (unsolvedOutput.isPresent()) {
+                try (BufferedWriter writer = new BufferedWriter(new FileWriter(unsolvedOutput.get()))) {
+                    for (Integer puzzle : unsolved) writer.write(puzzle + "\n");
+                    System.out.println("Unsolved puzzles written to " + unsolvedOutput.get().getAbsolutePath());
+                } catch (IOException e) {
+                    System.out.println("Failed to write unsolved puzzles to file");
+                }
+            } else {
+                StringBuilder sb = new StringBuilder();
+                sb.append("Unsolved puzzles: ");
+                int limit = showAllPuzzles ? unsolved.size() : 10;
+                sb.append(unsolved.stream().limit(limit).map(String::valueOf).collect(Collectors.joining(", ")));
+                if (unsolved.size() > limit) sb.append(", and ").append(unsolved.size() - limit).append(" more...");
+                System.out.println(sb);
+            }
         }
         if (iterations <= 5000000) {
             String slowest = new HashMap<>(solveTimes).entrySet().stream()
@@ -134,5 +184,7 @@ public class SolverChecker {
             System.out.printf("Progress: %d / %d (%.2f%%)%n", completedPuzzles, iterations, percent);
         }
     }
+
+    private record PuzzleInfo(IntStream puzzles, int size, int max) {}
 
 }
