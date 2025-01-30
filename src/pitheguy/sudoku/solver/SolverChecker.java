@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -65,7 +66,7 @@ public class SolverChecker {
         long startTime = System.currentTimeMillis();
         List<Integer> unsolved = Collections.synchronizedList(new ArrayList<>());
         AtomicInteger completed = new AtomicInteger(0);
-        Map<Integer, Long> solveTimes = new HashMap<>();
+        Map<Integer, Long> solveTimes = new ConcurrentHashMap<>();
         ThreadLocal<Sudoku> threadLocalSudoku = ThreadLocal.withInitial(() -> new Sudoku(false));
         ByteBuffer buffer = ByteBuffer.allocate(164 * iterations);
         try (FileChannel fileChannel = new FileInputStream("sudoku.csv").getChannel()) {
@@ -96,7 +97,8 @@ public class SolverChecker {
         double totalTime = (System.currentTimeMillis() - startTime) / 1000.0;
         int solvedPuzzles = iterations - unsolved.size();
         double percent = (double) solvedPuzzles / iterations * 100;
-        System.out.printf("Solved %d of %d puzzles (" + (percent < 99.99 ? "%.2f" : "%.3f") + "%%) in %.2f seconds%n", solvedPuzzles, iterations, percent, totalTime);
+        String percentFormat = percent > 99.99 && percent < 100 ? "%.3f" : "%.2f";
+        System.out.printf("Solved %d of %d puzzles (" + percentFormat + "%%) in %.2f seconds%n", solvedPuzzles, iterations, percent, totalTime);
         if (!unsolved.isEmpty()) {
             Collections.sort(unsolved);
             StringBuilder sb = new StringBuilder();
@@ -106,8 +108,9 @@ public class SolverChecker {
             if (unsolved.size() > limit) sb.append(", and ").append(unsolved.size() - limit).append(" more...");
             System.out.println(sb);
         }
-        if (iterations <= 1000000) {
+        if (iterations <= 5000000) {
             String slowest = new HashMap<>(solveTimes).entrySet().stream()
+                    .parallel()
                     .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
                     .limit(3L)
                     .map(e -> getEntryString(e, unsolved))
