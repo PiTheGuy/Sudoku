@@ -111,6 +111,7 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         if (changed || requireClosed) return changed;
         changed = processDigitForcingChains(disconnectedCycles);
         changed |= processCellForcingChains(disconnectedCycles);
+        changed |= processUnitForcingChains(disconnectedCycles);
         return changed;
     }
 
@@ -144,14 +145,19 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         return changed;
     }
 
-    private boolean processCellForcingChains(Set<Cycle> disconnectedCycles) {
-        boolean changed = false;
+    private static Map<Node, List<Cycle>> createCyclesByStartMap(Set<Cycle> disconnectedCycles) {
         Map<Node, List<Cycle>> cyclesByStart = new HashMap<>();
         for (Cycle cycle : disconnectedCycles) {
             if (isCycleInvalid(cycle)) continue;
             if (!cycle.getFirst().isSingle()) continue;
             cyclesByStart.computeIfAbsent(cycle.getFirst(), k -> new ArrayList<>()).add(cycle);
         }
+        return cyclesByStart;
+    }
+
+    private boolean processCellForcingChains(Set<Cycle> disconnectedCycles) {
+        boolean changed = false;
+        Map<Node, List<Cycle>> cyclesByStart = createCyclesByStartMap(disconnectedCycles);
         squares:
         for (Square square : sudoku.getAllSquares()) {
             if (square.isSolved()) continue;
@@ -182,6 +188,57 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
                     changed |= node.squares().getFirst().getCandidates().setFlags(DigitCandidates.getFlags(node.digit()));
                 else if (conclusions.stream().allMatch(map -> map.get(node).isOff()))
                     changed |= node.squares.getFirst().getCandidates().remove(node.digit());
+            }
+        }
+        return changed;
+    }
+
+    private boolean processUnitForcingChains(Set<Cycle> disconnectedCycles) {
+        boolean changed = false;
+        disconnectedCycles.removeIf(AlternatingInferenceChainsStrategy::isCycleInvalid);
+        Map<Node, List<Cycle>> cyclesByStart = createCyclesByStartMap(disconnectedCycles);
+        changed |= processUnitForUnitForcingChains(cyclesByStart, sudoku::getRow);
+        changed |= processUnitForUnitForcingChains(cyclesByStart, sudoku::getColumn);
+        changed |= processUnitForUnitForcingChains(cyclesByStart, sudoku::getBox);
+        return changed;
+    }
+
+    private boolean processUnitForUnitForcingChains(Map<Node, List<Cycle>> cyclesByStart, Function<Integer, List<Square>> unitGetter) {
+        boolean changed = false;
+        for (int i = 0; i < 9; i++) {
+            List<Square> squares = unitGetter.apply(i);
+            squares.removeIf(Square::isSolved);
+            digits:
+            for (int digit = 1; digit <= 9; digit++) {
+                if (SolverUtils.hasDigitSolved(squares, digit)) continue;
+                List<Map<Node, NodeState>> conclusions = new ArrayList<>();
+                List<Square> containedSquares = new ArrayList<>(squares);
+                int finalDigit = digit;
+                containedSquares.removeIf(square -> !square.getCandidates().contains(finalDigit));
+                if (containedSquares.size() == 1) continue;
+                for (Square square : containedSquares) {
+                    if (!cyclesByStart.containsKey(new Node(square, digit))) continue digits;
+                    Map<Node, NodeState> map = new HashMap<>();
+                    List<Cycle> cycles = cyclesByStart.get(new Node(square, digit));
+                    for (Cycle cycle : cycles) {
+                        boolean on = true;
+                        for (Node node : cycle) {
+                            NodeState newState = on ? NodeState.turnOn(map.get(node)) : NodeState.turnOff(map.get(node));
+                            map.put(node, newState);
+                            on = !on;
+                        }
+                    }
+                    conclusions.add(map);
+                }
+                if (conclusions.isEmpty()) continue;
+                for (Node node : conclusions.getFirst().keySet()) {
+                    if (!node.isSingle()) continue;
+                    if (!conclusions.stream().allMatch(map -> map.containsKey(node))) continue;
+                    if (conclusions.stream().allMatch(map -> map.get(node).isOn()) && node.squares().getFirst().getCandidates().contains(node.digit()))
+                        changed |= node.squares().getFirst().getCandidates().setFlags(DigitCandidates.getFlags(node.digit()));
+                    else if (conclusions.stream().allMatch(map -> map.get(node).isOff()))
+                        changed |= node.squares.getFirst().getCandidates().remove(node.digit());
+                }
             }
         }
         return changed;

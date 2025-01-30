@@ -97,6 +97,7 @@ public class SolverChecker {
         double totalTime = (System.currentTimeMillis() - startTime) / 1000.0;
         int solvedPuzzles = iterations - unsolved.size();
         double percent = (double) solvedPuzzles / iterations * 100;
+        if (percent > 99.999 && percent < 100) percent = 99.999; // Don't show 100% unless all puzzles are solved
         String percentFormat = percent > 99.99 && percent < 100 ? "%.3f" : "%.2f";
         System.out.printf("Solved %d of %d puzzles (" + percentFormat + "%%) in %.2f seconds%n", solvedPuzzles, iterations, percent, totalTime);
         if (!unsolved.isEmpty()) {
