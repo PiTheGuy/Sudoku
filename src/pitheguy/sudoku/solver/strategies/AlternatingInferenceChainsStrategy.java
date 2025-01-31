@@ -275,7 +275,6 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         }
     }
 
-    @SuppressWarnings("SlowListContainsAll") //Cycles already use a set for containment checks
     private void findCycles(Node node, Cycle cycle, Set<Cycle> continuousCycles, Set<Cycle> discontinuousCycles, Set<Cycle> disconnectedCycles, boolean isStrongLink, int maxDepth, boolean requireClosed) {
         if (cycle.size() > maxDepth) return;
         if (!cycle.isEmpty()) {
@@ -291,7 +290,7 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         }
         if (!validNextNode(cycle, node)) return;
         Set<Node> links = isStrongLink ? findStrongLinks(node) : findWeakLinks(node);
-        if (links.isEmpty() || cycle.containsAll(links)) {
+        if (links.isEmpty() || links.size() == 1 && cycle.contains(links.iterator().next())) {
             if (!requireClosed) {
                 Cycle copy = cycle.copy();
                 copy.add(node);
@@ -390,6 +389,7 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
             weakLinks.addAll(findWeakLinksForGroup(squares.getFirst().getSurroundingColumn(), digit, GroupType.COLUMN));
         if (node.getConnectionType() == Node.ConnectionType.SINGLE || SolverUtils.allInSameGroup(node.squares(), GroupType.BOX))
             weakLinks.addAll(findWeakLinksForGroup(squares.getFirst().getSurroundingBox(), digit, GroupType.BOX));
+        weakLinks.remove(node);
         weakLinkCache.put(node, weakLinks);
         return weakLinks;
     }
@@ -579,8 +579,7 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         public boolean equals(Object obj) {
             if (obj == this) return true;
             if (obj == null || obj.getClass() != this.getClass()) return false;
-            var that = (Node) obj;
-            return this.hashCode() == that.hashCode();
+            return this.hashCode == obj.hashCode();
         }
 
         @Override
