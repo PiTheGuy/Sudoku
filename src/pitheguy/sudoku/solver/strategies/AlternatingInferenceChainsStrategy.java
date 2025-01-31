@@ -565,7 +565,7 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
             if (obj == this) return true;
             if (obj == null || obj.getClass() != this.getClass()) return false;
             var that = (Node) obj;
-            return this.hashCode == that.hashCode;
+            return this.hashCode() == that.hashCode();
         }
 
         @Override

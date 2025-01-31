@@ -172,7 +172,7 @@ public class Square extends JPanel implements Comparable<Square> {
 
     @Override
     public int hashCode() {
-        return getIndex();
+        return row * 31 + col;
     }
 
     @Override
