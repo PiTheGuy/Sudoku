@@ -21,6 +21,7 @@ public class SudokuSolver {
         while (!sudoku.isSolved()) {
             boolean changed = stepSolve();
             if (!changed || DEBUG) break;
+            sudoku.repaint();
         }
     }
 
