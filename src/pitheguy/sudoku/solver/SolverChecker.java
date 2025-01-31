@@ -6,6 +6,7 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import pitheguy.sudoku.gui.Sudoku;
+import pitheguy.sudoku.solver.strategies.AlternatingInferenceChainsStrategy;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;

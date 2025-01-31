@@ -110,8 +110,9 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         }
         if (changed || requireClosed) return changed;
         changed = processDigitForcingChains(disconnectedCycles);
-        changed |= processCellForcingChains(disconnectedCycles);
-        changed |= processUnitForcingChains(disconnectedCycles);
+        Map<Node, List<Cycle>> cyclesByStart = createCyclesByStartMap(disconnectedCycles);
+        changed |= processCellForcingChains(cyclesByStart);
+        changed |= processUnitForcingChains(cyclesByStart);
         return changed;
     }
 
@@ -155,9 +156,8 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         return cyclesByStart;
     }
 
-    private boolean processCellForcingChains(Set<Cycle> disconnectedCycles) {
+    private boolean processCellForcingChains(Map<Node, List<Cycle>> cyclesByStart) {
         boolean changed = false;
-        Map<Node, List<Cycle>> cyclesByStart = createCyclesByStartMap(disconnectedCycles);
         squares:
         for (Square square : sudoku.getAllSquares()) {
             if (square.isSolved()) continue;
@@ -193,10 +193,8 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         return changed;
     }
 
-    private boolean processUnitForcingChains(Set<Cycle> disconnectedCycles) {
+    private boolean processUnitForcingChains(Map<Node, List<Cycle>> cyclesByStart) {
         boolean changed = false;
-        disconnectedCycles.removeIf(AlternatingInferenceChainsStrategy::isCycleInvalid);
-        Map<Node, List<Cycle>> cyclesByStart = createCyclesByStartMap(disconnectedCycles);
         changed |= processUnitForUnitForcingChains(cyclesByStart, sudoku::getRow);
         changed |= processUnitForUnitForcingChains(cyclesByStart, sudoku::getColumn);
         changed |= processUnitForUnitForcingChains(cyclesByStart, sudoku::getBox);

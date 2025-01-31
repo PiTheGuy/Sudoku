@@ -20,6 +20,9 @@ public class Sudoku extends JFrame {
     public final Box[] boxes = new Box[9];
     public String[] board = createEmptyBoard();
     private final Square[] cachedSquares = new Square[81];
+    private final Square[][] rows = new Square[9][9];
+    private final Square[][] columns = new Square[9][9];
+    private final Square[][] boxSquares = new Square[9][9];
     private int selectedCell = -1;
 
     private static final ThreadLocal<RandomAccessFile> threadLocalFile = ThreadLocal.withInitial(() -> {
@@ -43,7 +46,7 @@ public class Sudoku extends JFrame {
             }
         }
         addKeyListener(new SudokuKeyListener());
-        initializeSquareCache();
+        initializeCacheArrays();
         setVisible(visible);
     }
 
@@ -53,10 +56,17 @@ public class Sudoku extends JFrame {
         return board;
     }
 
-    private void initializeSquareCache() {
+    private void initializeCacheArrays() {
         for (int row = 0; row < 9; row++) {
             for (int col = 0; col < 9; col++) {
                 cachedSquares[row * 9 + col] = boxes[(row / 3) * 3 + (col / 3)].getSquare(row % 3, col % 3);;
+            }
+        }
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                rows[i][j] = getSquare(i, j);
+                columns[i][j] = getSquare(j, i);
+                boxSquares[i][j] = boxes[i].getSquare(j);
             }
         }
     }
@@ -93,21 +103,15 @@ public class Sudoku extends JFrame {
     }
 
     public List<Square> getRow(int row) {
-        List<Square> list = new ArrayList<>(9);
-        for (int col = 0; col < 9; col++) list.add(getSquare(row, col));
-        return list;
+        return new ArrayList<>(Arrays.asList(rows[row]));
     }
 
     public List<Square> getColumn(int col) {
-        List<Square> list = new ArrayList<>(9);
-        for (int row = 0; row < 9; row++) list.add(getSquare(row, col));
-        return list;
+        return new ArrayList<>(Arrays.asList(columns[col]));
     }
 
     public List<Square> getBox(int box) {
-        List<Square> list = new ArrayList<>(9);
-        for (int cell = 0; cell < 9; cell++) list.add(boxes[box].getSquare(cell));
-        return list;
+        return new ArrayList<>(Arrays.asList(boxSquares[box]));
     }
 
     public List<Square> getAllSquares() {
