@@ -109,11 +109,11 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
             else changed |= square.getCandidates().remove(digit);
         }
         if (changed || requireClosed) return changed;
-        changed = processDigitForcingChains(disconnectedCycles);
+        if (processDigitForcingChains(disconnectedCycles)) return true;
         Map<Node, List<Cycle>> cyclesByStart = createCyclesByStartMap(disconnectedCycles);
-        changed |= processCellForcingChains(cyclesByStart);
-        changed |= processUnitForcingChains(cyclesByStart);
-        return changed;
+        if (processCellForcingChains(cyclesByStart)) return true;
+        if (processUnitForcingChains(cyclesByStart)) return true;
+        return false;
     }
 
     private static boolean processDigitForcingChains(Set<Cycle> disconnectedCycles) {
