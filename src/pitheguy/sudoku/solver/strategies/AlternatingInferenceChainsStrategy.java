@@ -335,14 +335,12 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
                 if (set.getExtraDigit() == node.digit() && set.getExtraDigitSquare() == square)
                     links.addAll(set.getPossibleNodes());
         }
-        List<Optional<Node>> externalLinks = new ArrayList<>();
         if (node.getConnectionType() != Node.ConnectionType.COLUMN)
-            externalLinks.add(findStrongLinksForGroup(node, squares.getFirst().getSurroundingRow(), digit, GroupType.ROW));
+            findStrongLinksForGroup(node, squares.getFirst().getSurroundingRow(), digit, GroupType.ROW).ifPresent(links::add);
         if (node.getConnectionType() != Node.ConnectionType.ROW)
-            externalLinks.add(findStrongLinksForGroup(node, squares.getFirst().getSurroundingColumn(), digit, GroupType.COLUMN));
+            findStrongLinksForGroup(node, squares.getFirst().getSurroundingColumn(), digit, GroupType.COLUMN).ifPresent(links::add);
         if (node.isSingle() || SolverUtils.allInSameGroup(node.squares(), GroupType.BOX))
-            externalLinks.add(findStrongLinksForGroup(node, squares.getFirst().getSurroundingBox(), digit, GroupType.BOX));
-        links.addAll(externalLinks.stream().filter(Optional::isPresent).map(Optional::get).toList());
+            findStrongLinksForGroup(node, squares.getFirst().getSurroundingBox(), digit, GroupType.BOX).ifPresent(links::add);
         strongLinkCache.put(node, links);
         return links;
     }
