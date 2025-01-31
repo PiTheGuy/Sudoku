@@ -152,6 +152,9 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
             if (isCycleInvalid(cycle)) continue;
             if (!cycle.getFirst().isSingle()) continue;
             cyclesByStart.computeIfAbsent(cycle.getFirst(), k -> new ArrayList<>()).add(cycle);
+            Cycle reverse = cycle.copy();
+            Collections.reverse(reverse);
+            cyclesByStart.computeIfAbsent(cycle.getLast(), k -> new ArrayList<>()).add(reverse);
         }
         return cyclesByStart;
     }
@@ -175,11 +178,17 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
                     boolean on = true;
                     for (Node node : cycle) {
                         NodeState newState = on ? NodeState.turnOn(map.get(node)) : NodeState.turnOff(map.get(node));
+                        if (square.getLocationString().equals("A5") && node.squares().getFirst().getLocationString().equals("C7") && newState != map.get(node)) {
+                            //System.out.println("Setting " + node + " to " + newState + " because of " + cycle);
+                        }
                         map.put(node, newState);
                         on = !on;
                     }
                 }
                 conclusions.add(map);
+            }
+            if (square.getLocationString().equals("A5")) {
+                //System.out.println("test");
             }
             for (Node node : conclusions.getFirst().keySet()) {
                 if (!node.isSingle()) continue;
@@ -266,6 +275,7 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         }
     }
 
+    @SuppressWarnings("SlowListContainsAll") //Cycles already use a set for containment checks
     private void findCycles(Node node, Cycle cycle, Set<Cycle> continuousCycles, Set<Cycle> discontinuousCycles, Set<Cycle> disconnectedCycles, boolean isStrongLink, int maxDepth, boolean requireClosed) {
         if (cycle.size() > maxDepth) return;
         if (!cycle.isEmpty()) {
@@ -281,7 +291,7 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         }
         if (!validNextNode(cycle, node)) return;
         Set<Node> links = isStrongLink ? findStrongLinks(node) : findWeakLinks(node);
-        if (links.isEmpty()) {
+        if (links.isEmpty() || cycle.containsAll(links)) {
             if (!requireClosed) {
                 Cycle copy = cycle.copy();
                 copy.add(node);
@@ -466,6 +476,11 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         @Override
         public boolean contains(Object o) {
             return containedNodes.contains(o);
+        }
+
+        @Override
+        public boolean containsAll(Collection<?> c) {
+            return containedNodes.containsAll(c);
         }
 
         public boolean contains(Square square, int digit) {
