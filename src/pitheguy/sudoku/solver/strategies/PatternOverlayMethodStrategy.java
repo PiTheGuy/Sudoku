@@ -6,9 +6,7 @@ import pitheguy.sudoku.solver.SolveStrategy;
 import pitheguy.sudoku.solver.SolverUtils;
 import pitheguy.sudoku.util.SquareSet;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 
 public class PatternOverlayMethodStrategy extends SolveStrategy {

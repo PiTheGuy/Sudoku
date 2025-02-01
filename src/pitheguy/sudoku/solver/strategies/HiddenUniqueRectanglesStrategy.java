@@ -2,15 +2,9 @@ package pitheguy.sudoku.solver.strategies;
 
 import pitheguy.sudoku.gui.Square;
 import pitheguy.sudoku.gui.Sudoku;
-import pitheguy.sudoku.solver.DigitCandidates;
-import pitheguy.sudoku.solver.SolveStrategy;
-import pitheguy.sudoku.solver.SolverUtils;
+import pitheguy.sudoku.solver.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 public class HiddenUniqueRectanglesStrategy extends SolveStrategy {
     public HiddenUniqueRectanglesStrategy(Sudoku sudoku) {

@@ -2,19 +2,10 @@ package pitheguy.sudoku.solver.strategies;
 
 import pitheguy.sudoku.gui.Square;
 import pitheguy.sudoku.gui.Sudoku;
-import pitheguy.sudoku.solver.DigitCandidates;
-import pitheguy.sudoku.solver.SolveStrategy;
-import pitheguy.sudoku.solver.SolverUtils;
-import pitheguy.sudoku.util.Pair;
-import pitheguy.sudoku.util.SquareSet;
-import pitheguy.sudoku.util.UniquePair;
+import pitheguy.sudoku.solver.*;
+import pitheguy.sudoku.util.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class AlignedPairExclusionStrategy extends SolveStrategy {
     public AlignedPairExclusionStrategy(Sudoku sudoku) {
@@ -101,9 +92,9 @@ public class AlignedPairExclusionStrategy extends SolveStrategy {
         if (square1.getBox() == square2.getBox()) squares.addAll(square1.getSurroundingBox());
         squares.remove(square1);
         squares.remove(square2);
-        squares.removeIf(Square::isSolved);
         List<UniquePair<DigitCandidates, Square>> list = new ArrayList<>();
         for (Square square : squares) {
+            if (square.isSolved()) continue;
             DigitCandidates candidates = square.getCandidates();
             if (candidates.count() > 1) {
                 DigitCandidates copy = candidates.copy();

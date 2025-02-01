@@ -2,10 +2,7 @@ package pitheguy.sudoku.solver.strategies;
 
 import pitheguy.sudoku.gui.Square;
 import pitheguy.sudoku.gui.Sudoku;
-import pitheguy.sudoku.solver.AlmostLockedSet;
-import pitheguy.sudoku.solver.DigitCandidates;
-import pitheguy.sudoku.solver.SolveStrategy;
-import pitheguy.sudoku.solver.SolverUtils;
+import pitheguy.sudoku.solver.*;
 import pitheguy.sudoku.util.Pair;
 import pitheguy.sudoku.util.SquareSet;
 

@@ -8,14 +8,7 @@ import pitheguy.sudoku.solver.SolverUtils;
 import pitheguy.sudoku.util.Pair;
 import pitheguy.sudoku.util.Util;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.*;
 
 public class XCyclesStrategy extends SolveStrategy {
 
@@ -64,6 +57,7 @@ public class XCyclesStrategy extends SolveStrategy {
     }
 
     private void findCycles(Square square, int digit, Cycle cycle, Set<Cycle> allCycles, boolean isStrongLink) {
+        if (cycle.size() > 12) return;
         if (!cycle.isEmpty() && cycle.getFirst() != square && cycle.contains(square)) return;
         List<Square> links = isStrongLink ? findStrongLinks(square, digit) : findWeakLinks(square, digit);
         if (links.isEmpty()) return;

@@ -5,13 +5,7 @@ import pitheguy.sudoku.gui.Sudoku;
 import pitheguy.sudoku.solver.DigitCandidates;
 import pitheguy.sudoku.solver.SolveStrategy;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 public class UniqueRectanglesStrategy extends SolveStrategy {
     public UniqueRectanglesStrategy(Sudoku sudoku) {

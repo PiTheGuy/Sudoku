@@ -3,10 +3,7 @@ package pitheguy.sudoku.util;
 import pitheguy.sudoku.gui.Square;
 import pitheguy.sudoku.gui.Sudoku;
 
-import java.util.BitSet;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 public class SquareSet implements Iterable<Square> {
     private final Sudoku sudoku;
