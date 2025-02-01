@@ -49,6 +49,8 @@ public class SudokuSolver {
                 new HiddenUniqueRectanglesStrategy(sudoku),
                 new WXYZWingStrategy(sudoku),
                 new AlignedPairExclusionStrategy(sudoku),
+                new FinnedXWingStrategy(sudoku),
+                new FinnedSwordfishStrategy(sudoku),
                 new AlmostLockedSetStrategy(sudoku),
                 new AlternatingInferenceChainsStrategy(sudoku),
                 new PatternOverlayMethodStrategy(sudoku)

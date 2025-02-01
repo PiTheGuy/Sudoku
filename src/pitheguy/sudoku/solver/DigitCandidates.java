@@ -79,7 +79,6 @@ public class DigitCandidates {
 
     public List<Integer> getAllCandidates() {
         if (flags == 0) return new ArrayList<>();
-        if (flags == 1) return new ArrayList<>(List.of(getFirst()));
         List<Integer> candidates = new ArrayList<>(Integer.bitCount(flags));
         int mask = flags;
         for (int i = 1; mask != 0; i++) {
