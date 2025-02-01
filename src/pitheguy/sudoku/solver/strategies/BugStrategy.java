@@ -24,7 +24,7 @@ public class BugStrategy extends SolveStrategy {
             if (wouldCreateDeadlyCondition(bugSquare.getSurroundingRow(), digit) &&
                 wouldCreateDeadlyCondition(bugSquare.getSurroundingColumn(), digit) &&
                 wouldCreateDeadlyCondition(bugSquare.getSurroundingBox(), digit)) {
-                bugSquare.setValue(String.valueOf(digit));
+                bugSquare.setValue(digit);
                 changed = true;
             }
         }

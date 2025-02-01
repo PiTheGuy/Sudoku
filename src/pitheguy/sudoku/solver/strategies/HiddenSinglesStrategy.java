@@ -23,7 +23,7 @@ public class HiddenSinglesStrategy extends ByGroupSolveStrategy {
                     square -> square.getCandidates().contains(finalDigit),
                     true);
             if (hiddenSingle.isPresent()) {
-                hiddenSingle.get().setValue(String.valueOf(digit));
+                hiddenSingle.get().setValue(digit);
                 changed = true;
             }
         }

@@ -18,7 +18,7 @@ import java.util.function.Function;
 public class Sudoku extends JFrame {
     public static final int BYTES_PER_LINE = 164;
     public final Box[] boxes = new Box[9];
-    public String[] board = createEmptyBoard();
+    public int[] board = createEmptyBoard();
     private final Square[] cachedSquares = new Square[81];
     private final Square[][] rows = new Square[9][9];
     private final Square[][] columns = new Square[9][9];
@@ -50,9 +50,9 @@ public class Sudoku extends JFrame {
         setVisible(visible);
     }
 
-    private static String[] createEmptyBoard() {
-        String[] board = new String[81];
-        Arrays.fill(board, "0");
+    private static int[] createEmptyBoard() {
+        int[] board = new int[81];
+        Arrays.fill(board, 0);
         return board;
     }
 
@@ -98,7 +98,7 @@ public class Sudoku extends JFrame {
     }
 
     public boolean isSolved() {
-        for (String value : board) if (value.isEmpty()) return false;
+        for (int value : board) if (value == 0) return false;
         return true;
     }
 
@@ -124,10 +124,10 @@ public class Sudoku extends JFrame {
 
     private void checkDuplicates(Function<Integer, List<Square>> groupExtractor) {
         for (int i = 0; i < 9; i++) {
-            Map<String, Square> values = new HashMap<>();
+            Map<Integer, Square> values = new HashMap<>();
             for (Square square : groupExtractor.apply(i)) {
-                String value = square.getValue();
-                if (value.isEmpty()) continue;
+                int value = square.getValue();
+                if (value == 0) continue;
                 if (values.containsKey(value)) {
                     values.get(value).setInvalid(true);
                     square.setInvalid(true);
@@ -172,10 +172,10 @@ public class Sudoku extends JFrame {
     public void loadPuzzle(String puzzle) {
         if (puzzle.contains(",")) puzzle = puzzle.substring(0, puzzle.indexOf(","));
         for (int cell = 0; cell < 81; cell++) {
-            String value = String.valueOf(puzzle.charAt(cell));
-            board[cell] = value.equals("0") ? "" : value;
-            Square square = getSquare(cell / 9, cell % 9);
-            square.setGiven(!value.equals("0"));
+            int value = puzzle.charAt(cell) - '0';
+            board[cell] = value;
+            Square square = cachedSquares[cell];
+            square.setGiven(value == 0);
             square.invalidateCachedValue();
         }
         resetCandidates();
@@ -204,10 +204,7 @@ public class Sudoku extends JFrame {
             return;
         }
         StringBuilder sb = new StringBuilder();
-        for (int cell = 0; cell < 81; cell++) {
-            String value = board[cell];
-            sb.append(value.isEmpty() ? "0" : value);
-        }
+        for (int cell = 0; cell < 81; cell++) sb.append(board[cell]);
         Util.copyToClipboard(sb.toString());
     }
 
@@ -218,7 +215,7 @@ public class Sudoku extends JFrame {
             Square square = cachedSquares[cell];
             short cellData;
             if (square.isSolved()) {
-                cellData = (short) (square.getValue().charAt(0) - '0');
+                cellData = (short) square.getValue();
                 if (square.isGiven()) cellData += 9;
             } else {
                 cellData = (short) (square.getCandidates().pack() + 18);
@@ -241,32 +238,24 @@ public class Sudoku extends JFrame {
             System.out.println("Warning: attempted to paste invalid or nonexistent board from clipboard");
             return;
         }
-        Arrays.fill(this.board, "");
-        resetCandidates();
-        for (int cell = 0; cell < 81; cell++) {
-            String value = String.valueOf(board.charAt(cell));
-            this.board[cell] = value.equals("0") ? "" : value;
-            cachedSquares[cell].setGiven(!value.equals("0"));
-            cachedSquares[cell].invalidateCachedValue();
-        }
-        repaint();
+        loadPuzzle(board);
     }
 
     private void loadFullBoard(String board) {
         try {
             board = board.substring("S9B".length());
             if (board.length() != 162) throw new IOException("Unexpected length: expected 162, got " + board.length());
-            Arrays.fill(this.board, "");
+            Arrays.fill(this.board, 0);
             for (int i = 0; i < 81; i++) {
                 Square square = cachedSquares[i];
                 String cellString = board.substring(i * 2, i * 2 + 2);
                 int cellData = Integer.parseInt(cellString, Character.MAX_RADIX);
                 if (cellData <= 0) throw new IOException("Invalid cell data: " + cellData);
                 else if (cellData <= 9) {
-                    square.setValue(String.valueOf(cellData));
+                    square.setValue(cellData);
                     square.setGiven(true);
                 } else if (cellData <= 18) {
-                    square.setValue(String.valueOf(cellData - 9));
+                    square.setValue(cellData - 9);
                     square.setGiven(false);
                 } else if (cellData <= 529) {
                     square.getCandidates().setFlags((short) (cellData - 18));
@@ -302,9 +291,9 @@ public class Sudoku extends JFrame {
                 int keyCode = e.getKeyCode();
                 if (keyCode >= KeyEvent.VK_1 && keyCode <= KeyEvent.VK_9) {
                     if (e.isShiftDown()) toggleCandidate(keyCode - '0');
-                    else cachedSquares[selectedCell].setValue(String.valueOf((char) keyCode));
+                    else cachedSquares[selectedCell].setValue(keyCode - '0');
                 } else if (keyCode == KeyEvent.VK_BACK_SPACE) {
-                    board[selectedCell] = "";
+                    board[selectedCell] = 0;
                     getSquare(selectedCell / 9, selectedCell % 9).invalidateCachedValue();
                 }
                 checkValidity();

@@ -7,7 +7,7 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -15,7 +15,7 @@ import java.util.stream.IntStream;
 public class SolverChecker {
     private static volatile boolean shutdownTriggered = false;
 
-    public static void main(String[] args) throws ParseException {
+    public static void main(String[] args) throws ParseException, InterruptedException {
         if (SudokuSolver.DEBUG) {
             System.err.println("Solver is still in debug mode.");
             System.exit(1);
@@ -31,7 +31,7 @@ public class SolverChecker {
         int progressUpdateInterval = Integer.parseInt(commandLine.getOptionValue("progressUpdateInterval", "50000"));
         boolean showAllPuzzles = commandLine.hasOption("all");
         Optional<File> unsolvedOutput = Optional.ofNullable(commandLine.getOptionValue("unsolvedOutput")).map(File::new);
-        run(puzzleInfo, progressUpdateInterval, showAllPuzzles, unsolvedOutput);
+        run(puzzleInfo, progressUpdateInterval, showAllPuzzles, unsolvedOutput, !commandLine.hasOption("puzzleIndexes"));
     }
 
     private static PuzzleInfo parsePuzzleInfo(CommandLine commandLine) {
@@ -83,7 +83,7 @@ public class SolverChecker {
         else System.out.println("Failed to solve puzzle " + puzzleNumber + " in " + timeTaken + " ms");
     }
 
-    private static void run(PuzzleInfo puzzleInfo, int progressUpdateInterval, boolean showAllPuzzles, Optional<File> unsolvedOutput) {
+    private static void run(PuzzleInfo puzzleInfo, int progressUpdateInterval, boolean showAllPuzzles, Optional<File> unsolvedOutput, boolean isSequential) throws InterruptedException {
         long startTime = System.currentTimeMillis();
         List<Integer> unsolved = Collections.synchronizedList(new ArrayList<>());
         AtomicInteger completed = new AtomicInteger(0);
@@ -98,17 +98,30 @@ public class SolverChecker {
             System.exit(1);
         }
         Runtime.getRuntime().addShutdownHook(new Thread(() -> summarizeProgress(completed.get(), showAllPuzzles, startTime, unsolved, solveTimes, unsolvedOutput)));
-        puzzleInfo.puzzles().parallel().forEach(i -> {
-            Sudoku sudoku = threadLocalSudoku.get();
-            byte[] bytes = new byte[Sudoku.BYTES_PER_LINE];
-            buffer.get((i - 1) * Sudoku.BYTES_PER_LINE, bytes, 0, Sudoku.BYTES_PER_LINE);
-            sudoku.loadPuzzle(new String(bytes));
-            long start = System.currentTimeMillis();
-            sudoku.solvePuzzle();
-            solveTimes.put(i, System.currentTimeMillis() - start);
-            if (!sudoku.isSolved()) unsolved.add(i);
-            printProgressIfNeeded(puzzleInfo.size(), progressUpdateInterval, completed.incrementAndGet());
-        });
+        int totalThreads = Runtime.getRuntime().availableProcessors();
+        ExecutorService executor = Executors.newFixedThreadPool(totalThreads);
+        int iterations = puzzleInfo.size();
+        int puzzlePerThread = iterations / totalThreads;
+        for (int thread = 0; thread < totalThreads; thread++) {
+            int startIndex = thread * puzzlePerThread;
+            int endIndex = Math.min(iterations, startIndex + puzzlePerThread);
+            executor.submit(() -> {
+                for (int i = startIndex; i < endIndex; i++) {
+                    int puzzleNum = isSequential ? i : puzzleInfo.puzzles().skip(i).findFirst().orElseThrow(); // Get the puzzle number
+                    Sudoku sudoku = threadLocalSudoku.get();
+                    byte[] bytes = new byte[Sudoku.BYTES_PER_LINE];
+                    buffer.get((puzzleNum - 1) * Sudoku.BYTES_PER_LINE, bytes, 0, Sudoku.BYTES_PER_LINE);
+                    sudoku.loadPuzzle(new String(bytes));
+                    long start = System.currentTimeMillis();
+                    sudoku.solvePuzzle();
+                    solveTimes.put(puzzleNum, System.currentTimeMillis() - start);
+                    if (!sudoku.isSolved()) unsolved.add(puzzleNum);
+                    printProgressIfNeeded(puzzleInfo.size(), progressUpdateInterval, completed.incrementAndGet());
+                }
+            });
+        }
+        executor.shutdown();
+        executor.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
         summarizeProgress(puzzleInfo.size(), showAllPuzzles, startTime, unsolved, solveTimes, unsolvedOutput);
     }
 

@@ -15,7 +15,7 @@ public class Square extends JPanel implements Comparable<Square> {
     private final int col;
     private boolean invalid = false;
     private boolean given = false;
-    private String cachedValue = "";
+    private int cachedValue = 0;
 
     public Square(Sudoku sudoku, int row, int col) {
         this.sudoku = sudoku;
@@ -41,33 +41,32 @@ public class Square extends JPanel implements Comparable<Square> {
         this.given = given;
     }
 
-    public String getValue() {
-        if (cachedValue == null) cachedValue = sudoku.board[row * 9 + col];
+    public int getValue() {
+        if (cachedValue == -1) cachedValue = sudoku.board[row * 9 + col];
         return cachedValue;
     }
 
-    public void setValue(String value) {
+    public void setValue(int value) {
         sudoku.board[row * 9 + col] = value;
         cachedValue = value;
-        if (!value.isEmpty()) {
-            int digit = value.charAt(0) - '0';
-            performCandidateElimination(getSurroundingRow(), digit);
-            performCandidateElimination(getSurroundingColumn(), digit);
-            performCandidateElimination(getSurroundingBox(), digit);
+        if (value != 0) {
+            performCandidateElimination(getSurroundingRow(), value);
+            performCandidateElimination(getSurroundingColumn(), value);
+            performCandidateElimination(getSurroundingBox(), value);
         }
     }
 
     public void invalidateCachedValue() {
-        cachedValue = null;
+        cachedValue = -1;
     }
 
     public boolean isSolved() {
-        return !getValue().isEmpty();
+        return getValue() != 0;
     }
 
     private void performCandidateElimination(List<Square> squares, int digit) {
         for (Square square : squares) {
-            if (!square.getValue().isEmpty()) continue;
+            if (square.isSolved()) continue;
             square.getCandidates().remove(digit);
         }
     }
@@ -112,7 +111,7 @@ public class Square extends JPanel implements Comparable<Square> {
 
     @Override
     public String toString() {
-        return getLocationString() + ": " + (getValue().isEmpty() ? getCandidates() : getValue());
+        return getLocationString() + ": " + (isSolved() ? getCandidates() : getValue());
     }
 
     @Override
@@ -124,17 +123,18 @@ public class Square extends JPanel implements Comparable<Square> {
             g2.fillRect(0, 0, getWidth(), getHeight());
         }
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        String value = getValue();
-        if (!value.isEmpty()) {
+        int value = getValue();
+        if (value != 0) {
+            String text = String.valueOf(value);
             Font font = new Font("Arial", Font.BOLD, getWidth() / 2);
             g2.setFont(font);
             FontMetrics metrics = g2.getFontMetrics(font);
-            int textWidth = metrics.stringWidth(value);
+            int textWidth = metrics.stringWidth(text);
             int textHeight = metrics.getAscent();
             int x = (getWidth() - textWidth) / 2;
             int y = (getHeight() + textHeight) / 2 - metrics.getDescent();
             g2.setColor(getTextColor());
-            g2.drawString(value, x, y);
+            g2.drawString(text, x, y);
         } else if (candidates != null && !candidates.isEmpty()) {
             Font candidateFont = new Font("Arial", Font.PLAIN, getWidth() / 6);
             g2.setFont(candidateFont);

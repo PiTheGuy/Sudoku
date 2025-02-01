@@ -20,9 +20,8 @@ public class SolverUtils {
 
     public static boolean hasDigitSolved(List<Square> squares, int digit) {
         for (Square square : squares) {
-            String value = square.getValue();
-            if (value.isEmpty()) continue;
-            if (value.charAt(0) == '0' + digit) return true;
+            if (!square.isSolved()) continue;
+            if (square.getValue() == digit) return true;
         }
         return false;
     }

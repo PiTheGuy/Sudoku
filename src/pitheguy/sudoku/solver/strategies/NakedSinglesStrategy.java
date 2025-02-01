@@ -17,7 +17,7 @@ public class NakedSinglesStrategy extends SolveStrategy {
             if (square.isSolved()) continue;
             DigitCandidates candidates = square.getCandidates();
             if (candidates.count() == 1) {
-                square.setValue(String.valueOf(candidates.getFirst()));
+                square.setValue(candidates.getFirst());
                 changed = true;
             }
         }

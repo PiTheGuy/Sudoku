@@ -162,17 +162,11 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
                     boolean on = true;
                     for (Node node : cycle) {
                         NodeState newState = on ? NodeState.turnOn(map.get(node)) : NodeState.turnOff(map.get(node));
-                        if (square.getLocationString().equals("A5") && node.squares().getFirst().getLocationString().equals("C7") && newState != map.get(node)) {
-                            //System.out.println("Setting " + node + " to " + newState + " because of " + cycle);
-                        }
                         map.put(node, newState);
                         on = !on;
                     }
                 }
                 conclusions.add(map);
-            }
-            if (square.getLocationString().equals("A5")) {
-                //System.out.println("test");
             }
             for (Node node : conclusions.getFirst().keySet()) {
                 if (!node.isSingle()) continue;

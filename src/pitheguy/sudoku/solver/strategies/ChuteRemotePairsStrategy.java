@@ -55,7 +55,7 @@ public class ChuteRemotePairsStrategy extends SolveStrategy {
         c.remove(shared);
         int other = c.getFirst();
         for (Square square : squares) {
-            if (square.getValue().equals(String.valueOf(other))) {
+            if (square.getValue() == other) {
                 valid = false;
                 break;
             }

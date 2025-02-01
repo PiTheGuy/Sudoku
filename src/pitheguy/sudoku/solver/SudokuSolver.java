@@ -84,8 +84,7 @@ public class SudokuSolver {
     private static void removeInvalidCandidates(DigitCandidates candidates, List<Square> squares) {
         for (Square square : squares) {
             if (!square.isSolved()) continue;
-            int digit = square.getValue().charAt(0) - '0';
-            candidates.remove(digit);
+            candidates.remove(square.getValue());
         }
     }
 }
