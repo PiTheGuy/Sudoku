@@ -175,7 +175,7 @@ public class Sudoku extends JFrame {
             int value = puzzle.charAt(cell) - '0';
             board[cell] = value;
             Square square = cachedSquares[cell];
-            square.setGiven(value == 0);
+            square.setGiven(value != 0);
             square.invalidateCachedValue();
         }
         resetCandidates();

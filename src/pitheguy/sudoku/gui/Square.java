@@ -111,7 +111,7 @@ public class Square extends JPanel implements Comparable<Square> {
 
     @Override
     public String toString() {
-        return getLocationString() + ": " + (isSolved() ? getCandidates() : getValue());
+        return getLocationString() + ": " + (isSolved() ? getValue() : getCandidates());
     }
 
     @Override

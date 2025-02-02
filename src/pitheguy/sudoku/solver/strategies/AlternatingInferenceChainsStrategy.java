@@ -159,6 +159,7 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
                 Map<Node, NodeState> map = new HashMap<>();
                 List<Cycle> cycles = cyclesByStart.get(new Node(square, digit));
                 for (Cycle cycle : cycles) {
+                    if (cycle.isFirstLinkStrong()) continue;
                     boolean on = true;
                     for (Node node : cycle) {
                         NodeState newState = on ? NodeState.turnOn(map.get(node)) : NodeState.turnOff(map.get(node));

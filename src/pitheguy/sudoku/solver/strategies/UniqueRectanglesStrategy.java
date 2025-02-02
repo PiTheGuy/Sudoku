@@ -182,12 +182,7 @@ public class UniqueRectanglesStrategy extends SolveStrategy {
                             Rectangle rectangle = new Rectangle(square1, square2, row2);
                             if (rectangle.getCorners(sudoku).stream().anyMatch(Square::isSolved)) continue;
                             if (square1.getBox() != square2.getBox() && square1.getBox() != rectangle.square3(sudoku).getBox()) continue;
-                            DigitCandidates sharedCandidates = rectangle.getCorners(sudoku).stream().map(Square::getCandidates).reduce(new DigitCandidates(), DigitCandidates::and);
-                            if (sharedCandidates.count() != 2) continue;
-                            if (square1.getCandidates().equals(sharedCandidates) && rectangle.square4(sudoku).getCandidates().equals(sharedCandidates))
-                                rectangles.add(rectangle);
-                            else if (square2.getCandidates().equals(sharedCandidates) && rectangle.square3(sudoku).getCandidates().equals(sharedCandidates))
-                                rectangles.add(rectangle);
+                            if (isValidRectangle(sudoku, rectangle)) rectangles.add(rectangle);
                         }
                     }
                 }
@@ -208,6 +203,22 @@ public class UniqueRectanglesStrategy extends SolveStrategy {
                 changed |= processSquare(sudoku, rectangle, floor2);
                 if (changed) return true;
             }
+            return false;
+        }
+
+        private static boolean isValidRectangle(Sudoku sudoku, Rectangle rectangle) {
+            DigitCandidates sharedCandidates = rectangle.getCorners(sudoku).stream().map(Square::getCandidates).reduce(new DigitCandidates(), DigitCandidates::and);
+            if (sharedCandidates.count() != 2) return false;
+            if (rectangle.square1().getCandidates().equals(rectangle.square4(sudoku).getCandidates()) &&
+                rectangle.square1().getCandidates().equals(sharedCandidates) &&
+                rectangle.square2().getCandidates().count() > 2 &&
+                rectangle.square3(sudoku).getCandidates().count() > 2)
+                return true;
+            else if (rectangle.square2().getCandidates().equals(rectangle.square3(sudoku).getCandidates()) &&
+                     rectangle.square2().getCandidates().equals(sharedCandidates) &&
+                     rectangle.square1().getCandidates().count() > 2 &&
+                     rectangle.square4(sudoku).getCandidates().count() > 2)
+                return true;
             return false;
         }
 
