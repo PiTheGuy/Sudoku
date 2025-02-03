@@ -11,6 +11,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class AlternatingInferenceChainsStrategy extends SolveStrategy {
+    private static final boolean DEBUG_UNIT_FORCING_CHAINS = false;
+
     private static final List<Pair<Integer>> GROUP_ELIGIBLE_INDEX_PAIRS = Util.getAllPairs(IntStream.range(0, 9).boxed().toList()).stream()
             .filter(pair -> pair.first() / 3 == pair.second() / 3).toList();
     private static final List<List<Integer>> GROUP_ELIGIBLE_INDEX_TRIPLETS = List.of(List.of(0, 1, 2), List.of(3, 4, 5), List.of(6, 7, 8));
@@ -183,13 +185,13 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
 
     private boolean processUnitForcingChains(Map<Node, List<Cycle>> cyclesByStart) {
         boolean changed = false;
-        changed |= processUnitForUnitForcingChains(cyclesByStart, sudoku::getRow);
-        changed |= processUnitForUnitForcingChains(cyclesByStart, sudoku::getColumn);
-        changed |= processUnitForUnitForcingChains(cyclesByStart, sudoku::getBox);
+        changed |= processUnitForUnitForcingChains(cyclesByStart, sudoku::getRow, GroupType.ROW);
+        changed |= processUnitForUnitForcingChains(cyclesByStart, sudoku::getColumn, GroupType.COLUMN);
+        changed |= processUnitForUnitForcingChains(cyclesByStart, sudoku::getBox, GroupType.BOX);
         return changed;
     }
 
-    private boolean processUnitForUnitForcingChains(Map<Node, List<Cycle>> cyclesByStart, Function<Integer, List<Square>> unitGetter) {
+    private boolean processUnitForUnitForcingChains(Map<Node, List<Cycle>> cyclesByStart, Function<Integer, List<Square>> unitGetter, GroupType groupType) {
         boolean changed = false;
         for (int i = 0; i < 9; i++) {
             List<Square> squares = unitGetter.apply(i);
@@ -203,14 +205,16 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
                 containedSquares.removeIf(square -> !square.getCandidates().contains(finalDigit));
                 if (containedSquares.size() == 1) continue;
                 for (Square square : containedSquares) {
-                    if (!cyclesByStart.containsKey(new Node(square, digit))) continue digits;
+                    Node node = new Node(square, digit);
                     Map<Node, NodeState> map = new HashMap<>();
-                    List<Cycle> cycles = cyclesByStart.get(new Node(square, digit));
+                    for (Node current : weakLinkCache.get(node)) map.put(current, NodeState.OFF);
+                    if (!cyclesByStart.containsKey(node)) continue digits;
+                    List<Cycle> cycles = cyclesByStart.get(node);
                     for (Cycle cycle : cycles) {
                         boolean on = true;
-                        for (Node node : cycle) {
-                            NodeState newState = on ? NodeState.turnOn(map.get(node)) : NodeState.turnOff(map.get(node));
-                            map.put(node, newState);
+                        for (Node cycleNode : cycle) {
+                            NodeState newState = on ? NodeState.turnOn(map.get(cycleNode)) : NodeState.turnOff(map.get(cycleNode));
+                            map.put(cycleNode, newState);
                             on = !on;
                         }
                     }
@@ -220,10 +224,13 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
                 for (Node node : conclusions.getFirst().keySet()) {
                     if (!node.isSingle()) continue;
                     if (!conclusions.stream().allMatch(map -> map.containsKey(node))) continue;
-                    if (conclusions.stream().allMatch(map -> map.get(node).isOn()) && node.squares().getFirst().getCandidates().contains(node.digit()))
+                    if (conclusions.stream().allMatch(map -> map.get(node).isOn()) && node.squares().getFirst().getCandidates().contains(node.digit())) {
+                        if (DEBUG_UNIT_FORCING_CHAINS) System.out.println("Found match on " + groupType + " " + i + ", keeping " + node.digit() + " on " + node.squares().getFirst());
                         changed |= node.squares().getFirst().getCandidates().setFlags(DigitCandidates.getFlags(node.digit()));
-                    else if (conclusions.stream().allMatch(map -> map.get(node).isOff()))
+                    } else if (conclusions.stream().allMatch(map -> map.get(node).isOff())) {
+                        if (DEBUG_UNIT_FORCING_CHAINS) System.out.println("Found match on " + groupType + " " + i + ", removing " + node.digit() + " from " + node.squares().getFirst());
                         changed |= node.squares.getFirst().getCandidates().remove(node.digit());
+                    }
                 }
             }
         }
