@@ -409,10 +409,10 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
             this.firstLinkStrong = firstLinkStrong;
         }
 
-        public Cycle(Collection<Node> nodes, boolean firstLinkStrong, Set<Node> containedNodes) {
+        public Cycle(Collection<Node> nodes, boolean firstLinkStrong) {
             super(nodes);
             this.firstLinkStrong = firstLinkStrong;
-            this.containedNodes.addAll(containedNodes);
+            this.containedNodes.addAll(nodes);
         }
 
         @Override
@@ -472,7 +472,7 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         }
 
         public List<Integer> getContainedDigits() {
-            return stream().map(Node::digit).distinct().toList();
+            return containedNodes.stream().map(Node::digit).toList();
         }
 
         public boolean isFirstLinkStrong() {
@@ -505,7 +505,7 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         }
 
         public Cycle copy() {
-            return new Cycle(this, firstLinkStrong, containedNodes);
+            return new Cycle(this, firstLinkStrong);
         }
     }
 
