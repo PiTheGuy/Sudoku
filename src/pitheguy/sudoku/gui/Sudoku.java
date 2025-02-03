@@ -24,6 +24,7 @@ public class Sudoku extends JFrame {
     private final Square[][] columns = new Square[9][9];
     private final Square[][] boxSquares = new Square[9][9];
     private int selectedCell = -1;
+    private String puzzle = "";
 
     private static final ThreadLocal<RandomAccessFile> threadLocalFile = ThreadLocal.withInitial(() -> {
         try {
@@ -170,7 +171,12 @@ public class Sudoku extends JFrame {
     }
 
     public void loadPuzzle(String puzzle) {
+        if (puzzle.startsWith("S9B")) {
+            loadFullBoard(puzzle);
+            return;
+        }
         if (puzzle.contains(",")) puzzle = puzzle.substring(0, puzzle.indexOf(","));
+        this.puzzle = puzzle;
         for (int cell = 0; cell < 81; cell++) {
             int value = puzzle.charAt(cell) - '0';
             board[cell] = value;
@@ -179,6 +185,7 @@ public class Sudoku extends JFrame {
             square.invalidateCachedValue();
         }
         resetCandidates();
+        if (selectedCell != -1 && cachedSquares[selectedCell].isGiven()) selectedCell = -1;
         repaint();
     }
 
@@ -189,7 +196,7 @@ public class Sudoku extends JFrame {
     }
 
     public void resetCandidates() {
-        getAllSquares().stream().filter(square -> !square.isSolved()).forEach(square -> square.getCandidates().reset());
+        getAllSquares().forEach(square -> square.getCandidates().reset());
     }
 
     public void toggleCandidate(int digit) {
@@ -242,6 +249,7 @@ public class Sudoku extends JFrame {
     }
 
     private void loadFullBoard(String board) {
+        String oldPuzzle = puzzle;
         try {
             board = board.substring("S9B".length());
             if (board.length() != 162) throw new IOException("Unexpected length: expected 162, got " + board.length());
@@ -263,8 +271,11 @@ public class Sudoku extends JFrame {
                 } else throw new IOException("Invalid cell data: " + cellData);
                 square.invalidateCachedValue();
             }
+            puzzle = board;
+            if (selectedCell != -1 && cachedSquares[selectedCell].isGiven()) selectedCell = -1;
         } catch (IOException e) {
             System.out.println("Warning: attempted to load malformed full board from clipboard: " + e.getMessage());
+            puzzle = oldPuzzle;
         }
 
     }
@@ -279,12 +290,16 @@ public class Sudoku extends JFrame {
         return true;
     }
 
+    public void restartPuzzle() {
+        loadPuzzle(puzzle);
+    }
+
     private class SudokuKeyListener extends KeyAdapter {
         @Override
         public void keyPressed(KeyEvent e) {
             if (e.getKeyCode() == KeyEvent.VK_F4) openLoadPuzzleDialog();
             if (e.getKeyCode() == KeyEvent.VK_F5) Util.runInBackground(Sudoku.this::solvePuzzle);
-            if (e.getKeyCode() == KeyEvent.VK_F6) resetCandidates();
+            if (e.getKeyCode() == KeyEvent.VK_F6) restartPuzzle();
             if (e.getKeyCode() == KeyEvent.VK_C && e.isControlDown()) copyBoardToClipboard(e.isShiftDown());
             if (e.getKeyCode() == KeyEvent.VK_V && e.isControlDown()) pasteBoardFromClipboard();
             if (selectedCell != -1) {
@@ -292,6 +307,9 @@ public class Sudoku extends JFrame {
                 if (keyCode >= KeyEvent.VK_1 && keyCode <= KeyEvent.VK_9) {
                     if (e.isShiftDown()) toggleCandidate(keyCode - '0');
                     else cachedSquares[selectedCell].setValue(keyCode - '0');
+                } else if (keyCode >= KeyEvent.VK_NUMPAD0 && keyCode <= KeyEvent.VK_NUMPAD9) {
+                    if (e.isShiftDown()) toggleCandidate(keyCode - KeyEvent.VK_NUMPAD0);
+                    else cachedSquares[selectedCell].setValue(keyCode - KeyEvent.VK_NUMPAD0);
                 } else if (keyCode == KeyEvent.VK_BACK_SPACE) {
                     board[selectedCell] = 0;
                     getSquare(selectedCell / 9, selectedCell % 9).invalidateCachedValue();
