@@ -29,6 +29,7 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         computeAlmostLockedSets();
         if (solveImpl(8, true)) return true;
         if (solveImpl(10, true)) return true;
+        if (solveImpl(12, true)) return true;
         if (solveImpl(15, true)) return true;
         if (solveImpl(15, false)) return true;
         return false;
