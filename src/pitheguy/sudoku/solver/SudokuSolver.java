@@ -37,6 +37,7 @@ public class SudokuSolver {
                 new HiddenTripletsStrategy(sudoku),
                 new XWingStrategy(sudoku),
                 new ChuteRemotePairsStrategy(sudoku),
+                new SimpleColoringStrategy(sudoku),
                 new XYWingStrategy(sudoku),
                 new BugStrategy(sudoku),
                 new RectangleEliminationStrategy(sudoku),
