@@ -276,7 +276,7 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
             } else if (cycle.contains(node)) return;
         }
         if (!validNextNode(cycle, node)) return;
-        Set<Node> links = isStrongLink ? findStrongLinks(node) : findWeakLinks(node);
+        Set<Node> links = isStrongLink ? getStrongLinks(node) : getWeakLinks(node);
         if (links.isEmpty() || links.size() == 1 && cycle.contains(links.iterator().next())) {
             if (!requireClosed) {
                 Cycle copy = cycle.copy();
@@ -304,8 +304,11 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         return true;
     }
 
+    private Set<Node> getStrongLinks(Node node) {
+        return strongLinkCache.computeIfAbsent(node, this::findStrongLinks);
+    }
+
     private Set<Node> findStrongLinks(Node node) {
-        if (strongLinkCache.containsKey(node)) return strongLinkCache.get(node);
         List<Square> squares = node.squares();
         int digit = node.digit();
         Set<Node> links = new LinkedHashSet<>();
@@ -328,7 +331,6 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
             findStrongLinksForGroup(node, squares.getFirst().getSurroundingColumn(), digit, GroupType.COLUMN).ifPresent(links::add);
         if (node.isSingle() || SolverUtils.allInSameGroup(node.squares(), GroupType.BOX))
             findStrongLinksForGroup(node, squares.getFirst().getSurroundingBox(), digit, GroupType.BOX).ifPresent(links::add);
-        strongLinkCache.put(node, links);
         return links;
     }
 
@@ -358,8 +360,11 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         return Optional.empty();
     }
 
+    private Set<Node> getWeakLinks(Node node) {
+        return weakLinkCache.computeIfAbsent(node, this::findWeakLinks);
+    }
+
     private Set<Node> findWeakLinks(Node node) {
-        if (weakLinkCache.containsKey(node)) return weakLinkCache.get(node);
         List<Square> squares = node.squares();
         int digit = node.digit();
         Set<Node> weakLinks = new LinkedHashSet<>();
@@ -375,7 +380,6 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         if (node.getConnectionType() == Node.ConnectionType.SINGLE || SolverUtils.allInSameGroup(node.squares(), GroupType.BOX))
             weakLinks.addAll(findWeakLinksForGroup(squares.getFirst().getSurroundingBox(), digit, GroupType.BOX));
         weakLinks.remove(node);
-        weakLinkCache.put(node, weakLinks);
         return weakLinks;
     }
 
