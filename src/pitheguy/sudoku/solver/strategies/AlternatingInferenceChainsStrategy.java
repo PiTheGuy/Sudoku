@@ -263,7 +263,6 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
     }
 
     private void findCycles(Node node, Cycle cycle, Set<Cycle> continuousCycles, Set<Cycle> discontinuousCycles, Set<Cycle> disconnectedCycles, boolean isStrongLink, int maxDepth, boolean requireClosed) {
-        if (cycle.size() > maxDepth) return;
         if (!cycle.isEmpty()) {
             if (cycle.getFirst().equals(node)) {
                 if (cycle.size() > 2) {
@@ -285,6 +284,7 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
             }
             return;
         }
+        if (cycle.size() >= maxDepth) return;
         cycle.add(node);
         for (Node link : links) {
             findCycles(link, cycle, continuousCycles, discontinuousCycles, disconnectedCycles, !isStrongLink, maxDepth, requireClosed);
@@ -409,6 +409,7 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
         private final boolean firstLinkStrong;
         private final Set<Node> containedNodes = new HashSet<>();
         private boolean closed = false;
+        private int closedHashCode = Integer.MIN_VALUE;
 
         public Cycle(boolean firstLinkStrong) {
             this.firstLinkStrong = firstLinkStrong;
@@ -501,7 +502,14 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
 
         @Override
         public int hashCode() {
-            if (!closed) return Objects.hash(super.hashCode(), firstLinkStrong);
+            if (closed) {
+                if (closedHashCode == Integer.MIN_VALUE) closedHashCode = computedClosedHashCode();
+                return closedHashCode;
+            }
+            return Objects.hash(super.hashCode(), firstLinkStrong);
+        }
+
+        private int computedClosedHashCode() {
             Node start = stream().min(Comparator.naturalOrder()).orElseThrow();
             int startIndex = indexOf(start);
             List<Node> normalized = new ArrayList<>(subList(startIndex, size()));
