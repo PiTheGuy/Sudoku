@@ -16,8 +16,8 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
     private static final List<Pair<Integer>> GROUP_ELIGIBLE_INDEX_PAIRS = Util.getAllPairs(IntStream.range(0, 9).boxed().toList()).stream()
             .filter(pair -> pair.first() / 3 == pair.second() / 3).toList();
     private static final List<List<Integer>> GROUP_ELIGIBLE_INDEX_TRIPLETS = List.of(List.of(0, 1, 2), List.of(3, 4, 5), List.of(6, 7, 8));
-    private final Map<Node, Set<Node>> strongLinkCache = new HashMap<>();
-    private final Map<Node, Set<Node>> weakLinkCache = new HashMap<>();
+    private final LinkCache strongLinkCache = new LinkCache();
+    private final LinkCache weakLinkCache = new LinkCache();
     private final Map<Square, List<AlmostLockedSet>> almostLockedSetCache = new HashMap<>();
 
     public AlternatingInferenceChainsStrategy(Sudoku sudoku) {
@@ -659,6 +659,41 @@ public class AlternatingInferenceChainsStrategy extends SolveStrategy {
                 case OFF -> OFF;
                 case ON, BOTH -> BOTH;
             };
+        }
+    }
+
+    private static class LinkCache {
+        private final Set<Node>[] singleNodes = new Set[81 * 9];
+        private final HashMap<Node, Set<Node>> nonSingleNodes = new HashMap<>();
+
+        public Set<Node> get(Node node) {
+            if (node.isSingle()) return singleNodes[getIndex(node)];
+            else return nonSingleNodes.get(node);
+        }
+
+        public void put(Node node, Set<Node> links) {
+            if (node.isSingle()) singleNodes[getIndex(node)] = links;
+            else nonSingleNodes.put(node, links);
+        }
+
+        public boolean containsKey(Node node) {
+            if (node.isSingle()) return singleNodes[getIndex(node)] != null;
+            else return nonSingleNodes.containsKey(node);
+        }
+
+        public Set<Node> computeIfAbsent(Node node, Function<Node, Set<Node>> mappingFunction) {
+            if (node.isSingle()) {
+                Set<Node> value = get(node);
+                if (value == null) {
+                    value = mappingFunction.apply(node);
+                    put(node, value);
+                }
+                return value;
+            } else return nonSingleNodes.computeIfAbsent(node, mappingFunction);
+        }
+
+        private static int getIndex(Node node) {
+            return node.squares().getFirst().getIndex() * 9 + (node.digit() - 1);
         }
     }
 }
